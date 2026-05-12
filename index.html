@@ -608,6 +608,152 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
   .legal-footer strong { color: var(--bcc-black); }
   
+  /* ============ 리드 수집 게이트 ============ */
+  .lead-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .lead-overlay.active { display: flex; }
+  .lead-card {
+    background: var(--bcc-white);
+    border-top: 4px solid var(--bcc-gold);
+    border-radius: 4px;
+    padding: 36px 32px;
+    max-width: 440px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .lead-brand {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px;
+    letter-spacing: 6px;
+    color: var(--bcc-black);
+  }
+  .lead-brand-line {
+    width: 32px;
+    height: 1.5px;
+    background: var(--bcc-gold);
+    margin: 6px 0 14px;
+  }
+  .lead-title {
+    font-family: Georgia, serif;
+    font-size: 18px;
+    color: var(--bcc-black);
+    margin-bottom: 8px;
+  }
+  .lead-desc {
+    font-size: 12px;
+    color: var(--bcc-gray-4);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .lead-field {
+    margin-bottom: 14px;
+  }
+  .lead-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--bcc-black);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .lead-field label .req {
+    color: var(--bcc-gold-dark);
+    margin-left: 2px;
+  }
+  .lead-input {
+    width: 100%;
+    background: var(--bcc-white);
+    border: 1px solid var(--bcc-gray-2);
+    color: var(--bcc-black);
+    padding: 11px 14px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .lead-input:focus {
+    outline: none;
+    border-color: var(--bcc-gold);
+  }
+  .lead-input.error {
+    border-color: #c0392b;
+  }
+  .lead-error {
+    color: #c0392b;
+    font-size: 11px;
+    margin-top: 4px;
+    display: none;
+  }
+  .lead-error.show { display: block; }
+  .lead-consent {
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--bcc-gray-1);
+    border-radius: 4px;
+    border-left: 2px solid var(--bcc-gold);
+  }
+  .lead-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--bcc-gray-4);
+    line-height: 1.5;
+    cursor: pointer;
+  }
+  .lead-checkbox:last-of-type { margin-bottom: 0; }
+  .lead-checkbox input {
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: var(--bcc-gold);
+  }
+  .lead-checkbox .label-text { flex: 1; }
+  .lead-checkbox .req {
+    color: var(--bcc-gold-dark);
+    font-weight: 700;
+  }
+  .lead-submit {
+    width: 100%;
+    background: var(--bcc-black);
+    color: var(--bcc-gold);
+    border: 1px solid var(--bcc-black);
+    padding: 14px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-top: 18px;
+    transition: all 0.2s;
+  }
+  .lead-submit:hover {
+    background: var(--bcc-gold);
+    color: var(--bcc-black);
+  }
+  .lead-submit:disabled {
+    background: var(--bcc-gray-3);
+    color: var(--bcc-white);
+    border-color: var(--bcc-gray-3);
+    cursor: not-allowed;
+  }
+  .lead-foot {
+    margin-top: 14px;
+    font-size: 10px;
+    color: var(--bcc-gray-3);
+    text-align: center;
+    line-height: 1.6;
+  }
+
   /* 모바일 */
   @media (max-width: 900px) {
     .app { grid-template-columns: 1fr; }
@@ -623,6 +769,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .search-section { grid-template-columns: 1fr; }
     .result-table .hide-mobile { display: none; }
     .page-title { font-size: 24px; }
+    .lead-card { padding: 28px 20px; }
   }
 </style>
 </head>
@@ -630,6 +777,55 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K94NGCTP"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<!-- ============ 리드 수집 게이트 ============ -->
+<div class="lead-overlay" id="leadOverlay" role="dialog" aria-modal="true" aria-labelledby="leadTitle">
+  <div class="lead-card">
+    <div class="lead-brand">BCC</div>
+    <div class="lead-brand-line"></div>
+    <h2 class="lead-title" id="leadTitle">유튜브 분석기 사용 등록</h2>
+    <p class="lead-desc">BCC가 독자 개발한 유튜브 분석 도구입니다. 사용 전 간단한 정보 입력이 필요합니다. (1회만 등록, 30일 유지)</p>
+
+    <form id="leadForm" novalidate>
+      <div class="lead-field">
+        <label for="leadName">이름<span class="req">*</span></label>
+        <input type="text" id="leadName" class="lead-input" placeholder="홍길동" autocomplete="name">
+        <div class="lead-error" id="leadNameError">이름을 입력해주세요.</div>
+      </div>
+
+      <div class="lead-field">
+        <label for="leadPhone">전화번호<span class="req">*</span></label>
+        <input type="tel" id="leadPhone" class="lead-input" placeholder="010-1234-5678" autocomplete="tel" maxlength="13" inputmode="numeric">
+        <div class="lead-error" id="leadPhoneError">010-XXXX-XXXX 형식으로 입력해주세요.</div>
+      </div>
+
+      <div class="lead-field">
+        <label for="leadEmail">이메일<span class="req">*</span></label>
+        <input type="email" id="leadEmail" class="lead-input" placeholder="example@email.com" autocomplete="email">
+        <div class="lead-error" id="leadEmailError">올바른 이메일 형식이 아닙니다.</div>
+      </div>
+
+      <div class="lead-consent">
+        <label class="lead-checkbox" for="leadPrivacy">
+          <input type="checkbox" id="leadPrivacy">
+          <span class="label-text">
+            <span class="req">[필수]</span> 개인정보 수집·이용에 동의합니다. 수집 정보는 BCC 도구 사용 통계 및 BCC 콘텐츠/강의 안내 목적으로만 사용됩니다. 보관 기간: 3년.
+          </span>
+        </label>
+        <label class="lead-checkbox" for="leadMarketing">
+          <input type="checkbox" id="leadMarketing">
+          <span class="label-text">
+            [선택] 마케팅 정보 수신에 동의합니다. (신규 도구·강의·이벤트 안내)
+          </span>
+        </label>
+        <div class="lead-error" id="leadPrivacyError" style="margin-top:6px;">개인정보 수집 동의는 필수입니다.</div>
+      </div>
+
+      <button type="submit" class="lead-submit" id="leadSubmit">도구 사용 시작</button>
+      <div class="lead-foot">입력 정보는 안전하게 저장되며, 30일간 재입력이 면제됩니다.</div>
+    </form>
+  </div>
+</div>
 
 <div class="app">
 
@@ -812,6 +1008,153 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <script>
 let currentResults = [];
 let currentSort = 'views';
+
+// ============ 리드 수집 게이트 ============
+const LEAD_GAS_URL = 'https://script.google.com/macros/s/AKfycbxzW84zXGAr8WSKdKhvZ-QK7hPBKgxySNvHapGaAalBSzGapAIjz6wL1bbpwzbomho/exec';
+const LEAD_TTL_DAYS = 30;
+
+function isLeadValid() {
+  const verified = localStorage.getItem('bcc_lead_verified');
+  const at = localStorage.getItem('bcc_lead_verified_at');
+  if (verified !== 'true' || !at) return false;
+  const verifiedAt = new Date(at).getTime();
+  if (isNaN(verifiedAt)) return false;
+  const ageDays = (Date.now() - verifiedAt) / (1000 * 60 * 60 * 24);
+  return ageDays < LEAD_TTL_DAYS;
+}
+
+function clearLead() {
+  localStorage.removeItem('bcc_lead_verified');
+  localStorage.removeItem('bcc_lead_verified_at');
+  localStorage.removeItem('bcc_lead_name');
+}
+
+function showLeadGate() {
+  document.getElementById('leadOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function hideLeadGate() {
+  document.getElementById('leadOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function formatPhone(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length < 4) return digits;
+  if (digits.length < 8) return digits.slice(0,3) + '-' + digits.slice(3);
+  return digits.slice(0,3) + '-' + digits.slice(3,7) + '-' + digits.slice(7);
+}
+
+function validatePhone(v) {
+  return /^010-\d{4}-\d{4}$/.test(v);
+}
+
+function validateEmail(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+function setFieldError(inputId, errorId, hasError) {
+  const input = document.getElementById(inputId);
+  const err = document.getElementById(errorId);
+  if (hasError) {
+    input.classList.add('error');
+    err.classList.add('show');
+  } else {
+    input.classList.remove('error');
+    err.classList.remove('show');
+  }
+}
+
+async function submitLead(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('leadName').value.trim();
+  const phone = document.getElementById('leadPhone').value.trim();
+  const email = document.getElementById('leadEmail').value.trim();
+  const privacy = document.getElementById('leadPrivacy').checked;
+  const marketing = document.getElementById('leadMarketing').checked;
+
+  let hasError = false;
+  setFieldError('leadName', 'leadNameError', !name);
+  if (!name) hasError = true;
+
+  const phoneOk = validatePhone(phone);
+  setFieldError('leadPhone', 'leadPhoneError', !phoneOk);
+  if (!phoneOk) hasError = true;
+
+  const emailOk = validateEmail(email);
+  setFieldError('leadEmail', 'leadEmailError', !emailOk);
+  if (!emailOk) hasError = true;
+
+  const privacyErrorEl = document.getElementById('leadPrivacyError');
+  if (!privacy) {
+    privacyErrorEl.classList.add('show');
+    hasError = true;
+  } else {
+    privacyErrorEl.classList.remove('show');
+  }
+
+  if (hasError) return;
+
+  const btn = document.getElementById('leadSubmit');
+  btn.disabled = true;
+  btn.textContent = '전송 중...';
+
+  const payload = {
+    name: name,
+    phone: phone,
+    email: email,
+    privacyConsent: true,
+    marketingConsent: marketing,
+    tool: 'BCC 유튜브 분석기',
+    category: '유튜브',
+    keyword: ''
+  };
+
+  try {
+    await fetch(LEAD_GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+
+    // no-cors 모드에서는 응답 본문을 읽을 수 없으므로, fetch가 throw하지 않으면 성공으로 간주
+    localStorage.setItem('bcc_lead_verified', 'true');
+    localStorage.setItem('bcc_lead_verified_at', new Date().toISOString());
+    localStorage.setItem('bcc_lead_name', name);
+
+    if (typeof gtag === 'function') {
+      gtag('event', 'lead_submitted', {
+        event_category: 'bcc_analyzer',
+        tool: 'BCC 유튜브 분석기',
+        marketing_consent: marketing
+      });
+    }
+
+    hideLeadGate();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '도구 사용 시작';
+    alert('전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\n\n' + err.message);
+  }
+}
+
+// 스크립트는 body 끝에 위치하므로 DOM 즉시 사용 가능
+(function initLeadGate() {
+  if (!isLeadValid()) {
+    clearLead();
+    showLeadGate();
+    if (typeof gtag === 'function') {
+      gtag('event', 'lead_form_view', { event_category: 'bcc_analyzer' });
+    }
+  }
+  document.getElementById('leadForm').addEventListener('submit', submitLead);
+  document.getElementById('leadPhone').addEventListener('input', function(e) {
+    e.target.value = formatPhone(e.target.value);
+  });
+})();
 
 function saveKey() {
   const key = document.getElementById('apiKey').value.trim();
