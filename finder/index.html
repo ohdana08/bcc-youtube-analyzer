@@ -658,6 +658,56 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
   .modal-warning strong { color: var(--bcc-gold-dark); }
 
+  .modal-safety {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: rgba(74, 124, 158, 0.08);
+    border-left: 3px solid #4a7c9e;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--bcc-black);
+    line-height: 1.7;
+  }
+  .modal-safety-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: var(--bcc-black);
+  }
+  .modal-safety .badge-recommend {
+    display: inline-block;
+    background: var(--bcc-gold);
+    color: var(--bcc-black);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .modal-safety-desc {
+    margin: 0 0 8px;
+    color: var(--bcc-gray-4);
+  }
+  .modal-safety-sublabel {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4a7c9e;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .modal .modal-safety-list {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.9;
+    color: var(--bcc-gray-4);
+  }
+  .modal .modal-safety-list li::marker {
+    color: #4a7c9e;
+    font-weight: 700;
+  }
+
   /* 푸터 (출처 표기) */
   .legal-footer {
     margin-top: 32px;
@@ -1083,6 +1133,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="modal-warning">
       <strong>⚠️ 가장 어려운 단계는 4번(카드 등록)입니다.</strong> 천천히 진행하시면 됩니다. 요금은 절대 청구되지 않으니 안심하세요.
     </div>
+
+    <div class="modal-safety">
+      <div class="modal-safety-title">💡 실제 안전장치 설정<span class="badge-recommend">강력 추천</span></div>
+      <p class="modal-safety-desc">요금이 청구될까 봐 불안하시면 다음 안전장치를 설정해두세요:</p>
+      <div class="modal-safety-sublabel">[Google Cloud Console에서]</div>
+      <ol class="modal-safety-list">
+        <li>좌측 메뉴 → <strong>"결제"</strong></li>
+        <li><strong>"예산 및 알림"</strong> 클릭</li>
+        <li><strong>"예산 만들기"</strong></li>
+        <li>예산 금액: <strong>1,000원 또는 0원</strong> 설정</li>
+        <li>→ 1원이라도 청구되면 즉시 알림 수신</li>
+        <li>→ 미리 확인 가능, 100% 안심</li>
+      </ol>
+    </div>
+
     <button class="modal-close" onclick="closeGuide()">확인</button>
   </div>
 </div>
