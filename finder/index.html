@@ -599,7 +599,65 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     font-weight: 700;
     letter-spacing: 1px;
   }
-  
+
+  /* 모달 - 가이드 본문 보강 */
+  .modal ol > li { margin-bottom: 4px; }
+  .modal .step-highlight { margin: 10px 0; }
+  .modal .step-highlight-box {
+    background: rgba(201, 168, 76, 0.12);
+    border-left: 3px solid var(--bcc-gold);
+    border-radius: 4px;
+    padding: 12px 14px;
+    line-height: 1.6;
+  }
+  .modal .step-highlight-title {
+    font-weight: 700;
+    color: var(--bcc-black);
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  .modal .badge-required {
+    display: inline-block;
+    background: var(--bcc-gold);
+    color: var(--bcc-black);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .modal .step-highlight-box ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+    line-height: 1.8;
+    font-size: 13px;
+    color: var(--bcc-gray-4);
+  }
+  .modal .step-highlight-box ul li { list-style: disc; }
+  .modal .step-sub {
+    font-size: 12px;
+    color: var(--bcc-gray-4);
+  }
+  .modal-tips {
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--bcc-gray-4);
+    line-height: 1.8;
+  }
+  .modal-warning {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: rgba(201, 168, 76, 0.08);
+    border-left: 3px solid var(--bcc-gold);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--bcc-black);
+    line-height: 1.7;
+  }
+  .modal-warning strong { color: var(--bcc-gold-dark); }
+
   /* 푸터 (출처 표기) */
   .legal-footer {
     margin-top: 32px;
@@ -994,17 +1052,37 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="modal">
     <h2>YouTube API Key 발급 방법</h2>
     <ol>
-      <li><a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>에 로그인합니다.</li>
-      <li>"새 프로젝트" 생성 → 이름 입력 후 만들기</li>
+      <li>Google Cloud Console에 접속합니다<br>
+        <span class="step-sub">(<a href="https://console.cloud.google.com/" target="_blank">console.cloud.google.com</a>)</span></li>
+      <li>Google 계정으로 로그인합니다</li>
+      <li><strong>"Google Cloud 시작하기"</strong> 클릭 → 약관 동의</li>
+      <li class="step-highlight">
+        <div class="step-highlight-box">
+          <div class="step-highlight-title">⚠️ 결제 카드 등록<span class="badge-required">필수 단계</span></div>
+          <ul>
+            <li>Google 보안 정책상 카드 등록이 필요합니다</li>
+            <li>무료 한도 내에서는 절대 요금이 청구되지 않습니다</li>
+            <li>신용/체크카드 모두 가능</li>
+            <li>본인 인증 SMS 받기</li>
+          </ul>
+        </div>
+      </li>
+      <li>좌측 상단 <strong>"프로젝트 선택"</strong> → <strong>"새 프로젝트"</strong> 생성<br>
+        <span class="step-sub">(이름 입력 후 만들기)</span></li>
       <li>좌측 메뉴 → "API 및 서비스" → "라이브러리"</li>
       <li>검색창에 <strong>"YouTube Data API v3"</strong> 입력 → "사용 설정"</li>
       <li>"사용자 인증 정보" → "+ 사용자 인증 정보 만들기" → "API 키"</li>
-      <li>생성된 키를 복사 → 좌측 사이드바에 붙여넣고 "저장" 클릭</li>
+      <li>생성된 키를 복사 → 좌측 사이드바에 붙여넣고 <strong>"저장"</strong> 클릭</li>
     </ol>
-    <p style="margin-top:20px; font-size:12px; color:var(--bcc-gray-4); line-height:1.7;">
+
+    <div class="modal-tips">
       💡 무료 할당량: 하루 10,000 unit (검색 약 100회 가능)<br>
-      💡 Key는 브라우저에만 저장되며 외부로 전송되지 않습니다.
-    </p>
+      💡 Key는 브라우저에만 저장되며 외부로 전송되지 않습니다
+    </div>
+
+    <div class="modal-warning">
+      <strong>⚠️ 가장 어려운 단계는 4번(카드 등록)입니다.</strong> 천천히 진행하시면 됩니다. 요금은 절대 청구되지 않으니 안심하세요.
+    </div>
     <button class="modal-close" onclick="closeGuide()">확인</button>
   </div>
 </div>
