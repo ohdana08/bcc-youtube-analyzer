@@ -343,11 +343,12 @@
       '<div class="bcc-upsell">'
       + '<div class="bcc-upsell-h">오늘 무료 분석 사용량을 모두 사용하셨습니다.</div>'
       + '<div class="bcc-upsell-p">BCC 무료 도구는 하루 5회까지 AI 액션 가이드를 제공합니다. 더 깊이 있는 분석과 콘텐츠 전략이 필요하시다면 BCC 1:1 컨설팅을 이용해주세요.<br>실행 단계까지 함께 설계해드립니다.</div>'
-      + '<a class="bcc-upsell-cta" href="https://pf.kakao.com/" target="_blank" rel="noopener" id="bccUpsellCta">카카오톡 채널로 1:1 컨설팅 문의 →</a>'
+      + '<a class="bcc-upsell-cta" href="https://pf.kakao.com/_xbrxjxkxj/chat" target="_blank" rel="noopener" id="bccUpsellCta">카카오톡 채널로 1:1 컨설팅 문의 →</a>'
       + '</div>';
     const a = document.getElementById('bccUpsellCta');
     if (a) a.addEventListener('click', function () {
       track('bcc_consulting_cta_click', { tool_name: _state.toolName, source: 'guide_quota_exceeded' });
+      track('kakao_consult_click', { source_page: _state.toolName, button_location: 'guide_upsell' });
     });
   }
 
