@@ -152,9 +152,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   /* ============ 카드 그리드 ============ */
   .tools-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
     margin-bottom: 40px;
+  }
+  @media (min-width: 1400px) {
+    .tools-grid { grid-template-columns: repeat(4, 1fr); }
   }
 
   .tool-card {
@@ -317,7 +320,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <header class="page-header">
       <h1 class="page-title">유튜브 <span class="accent">분석기</span></h1>
-      <p class="page-desc">키워드 트렌드부터 경쟁채널까지, BCC가 만든 3가지 유튜브 분석 도구</p>
+      <p class="page-desc">키워드 트렌드부터 채널·영상 분석까지, BCC가 만든 4가지 유튜브 분석 도구</p>
     </header>
 
     <section class="tools-grid">
@@ -348,7 +351,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="card-btn">분석하기</div>
       </a>
 
-      <!-- 카드 3: 준비 중 -->
+      <!-- 카드 3: 활성 -->
+      <a class="tool-card active" href="video-analyzer/" id="cardVideo">
+        <div class="card-icon">🎬</div>
+        <h2 class="card-title">영상 분석</h2>
+        <p class="card-desc">영상 URL 한 줄로 채널 평균 대비 성과, 후킹 패턴, 콘텐츠 메타까지 한 번에 진단합니다.</p>
+        <div class="card-tags">
+          <span class="card-tag">영상 URL</span>
+          <span class="card-tag">성과 진단</span>
+          <span class="card-tag">후킹 분석</span>
+        </div>
+        <div class="card-btn">분석하기</div>
+      </a>
+
+      <!-- 카드 4: 준비 중 -->
       <div class="tool-card disabled" id="cardKeyword" aria-disabled="true">
         <div class="card-icon">💎</div>
         <h2 class="card-title">황금키워드 발견</h2>
@@ -384,6 +400,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
   trackClick('cardFinder', 'finder');
   trackClick('cardCompetitor', 'competitor');
+  trackClick('cardVideo', 'video');
 
   // 준비 중 카드 호버 트래킹 (세션 내 카드별 1회만)
   const hoverFired = {};
