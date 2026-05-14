@@ -364,19 +364,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="card-btn">분석하기</div>
       </a>
 
-      <!-- 카드 4: 준비 중 -->
-      <div class="tool-card disabled" id="cardKeyword" aria-disabled="true">
+      <!-- 카드 4: 활성 -->
+      <a class="tool-card active" href="keyword-finder/" id="cardKeyword">
         <div class="card-icon">💎</div>
         <h2 class="card-title">황금키워드 발견</h2>
-        <p class="card-desc">키워드별 검색량과 경쟁도를 분석해 콘텐츠 기획에 유리한 황금 키워드를 찾아드립니다.</p>
+        <p class="card-desc">키워드 한 줄로 검색량·경쟁도·트렌드를 분석해 1인 사업자의 콘텐츠 기획에 유리한 황금 키워드를 찾아드립니다.</p>
         <div class="card-tags">
           <span class="card-tag">검색량 비교</span>
           <span class="card-tag">경쟁도 분석</span>
-          <span class="card-tag">콘텐츠 기획</span>
+          <span class="card-tag">트렌드</span>
         </div>
-        <div class="card-btn disabled">준비 중</div>
-        <div class="coming-soon">Coming Soon</div>
-      </div>
+        <div class="card-btn">검색하기</div>
+      </a>
 
     </section>
 
@@ -401,21 +400,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   trackClick('cardFinder', 'finder');
   trackClick('cardCompetitor', 'competitor');
   trackClick('cardVideo', 'video');
-
-  // 준비 중 카드 호버 트래킹 (세션 내 카드별 1회만)
-  const hoverFired = {};
-  function trackHover(cardId, name) {
-    const el = document.getElementById(cardId);
-    if (!el) return;
-    el.addEventListener('mouseenter', function() {
-      if (hoverFired[name]) return;
-      hoverFired[name] = true;
-      if (typeof gtag === 'function') {
-        gtag('event', 'coming_soon_hovered', { tool_name: name });
-      }
-    });
-  }
-  trackHover('cardKeyword', 'keyword');
+  trackClick('cardKeyword', 'keyword');
 </script>
 
 </body>
