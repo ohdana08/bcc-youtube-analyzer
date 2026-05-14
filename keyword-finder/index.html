@@ -10,6 +10,9 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 
+<!-- BCC common (export bar + action guide + PDF) -->
+<link rel="stylesheet" href="../common/bcc-pdf-styles.css">
+
 <!-- GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TYJSYWW5Q6"></script>
 <script>
@@ -745,6 +748,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<!-- BCC common modules -->
+<script src="../common/bcc-claude-api.js"></script>
+<script src="../common/bcc-action-guide.js"></script>
+<script src="../common/bcc-pdf-export.js"></script>
+<script>
+  BCCActionGuide.attach({ toolName: 'keyword-finder', toolTitle: '황금키워드 발견' });
+  BCCPDFExport.attach({ toolName: 'keyword-finder', toolTitle: '황금키워드 발견' });
+</script>
+
 <script>
 // ============================================================
 // Lead gate (shared)
@@ -1094,6 +1106,74 @@ async function searchKeyword() {
     competition_grade: stats.competitionKey,
     trend_grade: stats.trendKey
   });
+
+  // ---- BCC common: action guide + PDF export ----
+  try {
+    if (window.BCCActionGuide) {
+      BCCActionGuide.update('keyword-finder', {
+        keyword: keyword,
+        avgViews: Math.round(stats.avgViews),
+        avgSubs: Math.round(stats.avgSubs),
+        smallRatio: stats.smallRatio,
+        bigRatio: stats.bigRatio,
+        competition: stats.competitionLabel,
+        trend: stats.trendLabel,
+        recent90Ratio: stats.ratio90
+      }, keyword);
+    }
+    if (window.BCCPDFExport) {
+      const _top10Items = stats.top10.slice(0, 10).map((row, i) => {
+        const v = row.v;
+        const pub = new Date(v.snippet.publishedAt);
+        const ch = channelMap[v.snippet.channelId];
+        const chTitle = (ch && ch.title) || v.snippet.channelTitle || '';
+        return `**${i+1}위.** ${(v.snippet.title || '')} — ${chTitle} · ${fmtNum(row.views)}회 (${fmtDate(pub)})`;
+      });
+      const _suggestionLine = stats.suggestions && stats.suggestions.length
+        ? stats.suggestions.map(s => s.word + ' (×' + s.count + ')').join(', ')
+        : '없음';
+      BCCPDFExport.update({
+        analysisTarget: '"' + keyword + '" 키워드',
+        coverTitle: '황금키워드 발견 리포트',
+        headline: `이 키워드는 **${stats.competitionLabel}**이며 트렌드는 **${stats.trendLabel}**입니다. 상위 50개 평균 조회수 **${fmtNum(stats.avgViews)}회**, 평균 구독자 **${fmtCompact(stats.avgSubs)}명**.`,
+        summaryKpis: [
+          { label: '검색 결과', value: fmtCompact(stats.totalResults) + '개' },
+          { label: '평균 조회수', value: fmtNum(stats.avgViews) },
+          { label: '경쟁도', value: stats.competitionLabel },
+          { label: '트렌드', value: stats.trendLabel }
+        ],
+        sections: [
+          {
+            title: '경쟁도 분석',
+            kvs: [
+              { k: '평균 구독자', v: fmtCompact(stats.avgSubs) + '명' },
+              { k: '소형(<1만) 채널', v: Math.round(stats.smallRatio*100) + '%' },
+              { k: '대형(100만+) 채널', v: Math.round(stats.bigRatio*100) + '%' },
+              { k: '소형 채널 평균 조회수', v: fmtNum(stats.avgViewsSmall) }
+            ],
+            body: stats.competitionMsg.replace(/<\/?strong>/g, '**')
+          },
+          {
+            title: '트렌드 분석',
+            kvs: [
+              { k: '최근 1개월', v: stats.r30 + '개 (' + Math.round(stats.ratio30*100) + '%)' },
+              { k: '최근 3개월', v: stats.r90 + '개 (' + Math.round(stats.ratio90*100) + '%)' },
+              { k: '최근 1년', v: stats.r365 + '개 (' + Math.round(stats.ratio365*100) + '%)' }
+            ],
+            body: stats.trendMsg.replace(/<\/?strong>/g, '**')
+          },
+          {
+            title: 'TOP 10 영상',
+            items: _top10Items
+          },
+          {
+            title: '관련 확장 키워드 제안',
+            body: _suggestionLine
+          }
+        ]
+      });
+    }
+  } catch (_e) { console.error('[BCC integration]', _e); }
 }
 
 // ============================================================

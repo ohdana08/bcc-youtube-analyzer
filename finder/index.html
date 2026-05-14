@@ -10,6 +10,9 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 
+<!-- BCC common (export bar + action guide + PDF) -->
+<link rel="stylesheet" href="../common/bcc-pdf-styles.css">
+
 <!-- GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TYJSYWW5Q6"></script>
 <script>
@@ -1152,6 +1155,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<!-- BCC common modules -->
+<script src="../common/bcc-claude-api.js"></script>
+<script src="../common/bcc-action-guide.js"></script>
+<script src="../common/bcc-pdf-export.js"></script>
+<script>
+  BCCActionGuide.attach({ toolName: 'finder', toolTitle: '잘 나가는 영상 찾기' });
+  BCCPDFExport.attach({ toolName: 'finder', toolTitle: '잘 나가는 영상 찾기' });
+</script>
+
 <script>
 let currentResults = [];
 let currentSort = 'views';
@@ -1413,7 +1425,8 @@ async function analyze() {
     renderViralTop();
     renderKeywordPattern();
     renderResults();
-    
+    bccPublishFinder(keyword);
+
   } catch (err) {
     document.getElementById('status').textContent = '✗ 오류: ' + err.message;
     alert('오류 발생: ' + err.message + '\n\nAPI Key가 올바른지, YouTube Data API v3가 활성화되어 있는지 확인해주세요.');
@@ -1642,6 +1655,91 @@ function trackVideoClick(videoId, title) {
 document.getElementById('keyword').addEventListener('keypress', e => {
   if (e.key === 'Enter') analyze();
 });
+
+// ============================================================
+// BCC common: action guide + PDF export integration
+// ============================================================
+function bccPublishFinder(keyword) {
+  try {
+    if (!currentResults || currentResults.length === 0) return;
+    const total = currentResults.length;
+    const avgViral = Math.round(currentResults.reduce((s,v)=>s+v.viralScore,0)/total);
+    const avgViews = Math.round(currentResults.reduce((s,v)=>s+v.views,0)/total);
+    const shortCount = currentResults.filter(v=>v.durationMin<4).length;
+    const shortRatio = Math.round((shortCount/total)*100);
+    const uniqueChannels = new Set(currentResults.map(v=>v.channelId)).size;
+    const diversityRatio = uniqueChannels / total;
+
+    let difficulty, diffDesc;
+    if (avgViews < 10000 && diversityRatio > 0.7) { difficulty = '낮음'; diffDesc = '진입 기회 좋음'; }
+    else if (avgViews < 100000 && diversityRatio > 0.5) { difficulty = '보통'; diffDesc = '경쟁 가능'; }
+    else if (avgViews < 1000000) { difficulty = '높음'; diffDesc = '차별화 필수'; }
+    else { difficulty = '매우 높음'; diffDesc = '레드오션'; }
+
+    // TOP 5 viral list (matches renderViralTop)
+    const top5 = [...currentResults].sort((a,b)=>b.viralScore-a.viralScore).slice(0,5);
+    // Title-word top 10 (matches renderKeywordPattern)
+    const stopWords = new Set(['이','가','은','는','을','를','의','에','와','과','도','및','for','the','a','an','of','to','in','on','and','or','-','|','#','!','?',':','...','이용','방법','어떻게']);
+    const wordCount = {};
+    currentResults.forEach(v => {
+      const words = v.title
+        .replace(/[\[\]【】「」『』()(),.!?·•|—–\-]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length >= 2 && !stopWords.has(w.toLowerCase()));
+      words.forEach(w => { wordCount[w] = (wordCount[w] || 0) + 1; });
+    });
+    const topWords = Object.entries(wordCount)
+      .filter(([_, c]) => c >= 2)
+      .sort((a,b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([w,c]) => `${w} (×${c})`);
+
+    if (window.BCCActionGuide) {
+      BCCActionGuide.update('finder', {
+        keyword: keyword,
+        total: total,
+        avgViral: avgViral,
+        shortRatio: shortRatio,
+        uniqueChannels: uniqueChannels,
+        difficulty: difficulty
+      }, keyword);
+    }
+    if (window.BCCPDFExport) {
+      const top5Items = top5.map((v, i) => `**${i+1}위.** ${v.title} — ${v.viralScore.toLocaleString()}/일 (${v.publishedStr})`);
+      BCCPDFExport.update({
+        analysisTarget: '"' + keyword + '" 키워드',
+        coverTitle: '잘 나가는 영상 분석 리포트',
+        headline: `검색 결과 **${total}개** 영상의 평균 바이럴 지수 **${avgViral.toLocaleString()}/일**, 숏폼 비중 **${shortRatio}%**, 고유 채널 **${uniqueChannels}개**. 시장 진입 난이도: **${difficulty}** (${diffDesc}).`,
+        summaryKpis: [
+          { label: '평균 바이럴', value: avgViral.toLocaleString() + '/일' },
+          { label: '숏폼 비중', value: shortRatio + '%' },
+          { label: '채널 다양성', value: uniqueChannels + '개' },
+          { label: '진입 난이도', value: difficulty }
+        ],
+        sections: [
+          {
+            title: '시장 진단',
+            kvs: [
+              { k: '평균 조회수', v: avgViews.toLocaleString() },
+              { k: '평균 바이럴', v: avgViral.toLocaleString() + '/일' },
+              { k: '숏폼 비중', v: shortRatio + '%' },
+              { k: '채널 다양성', v: uniqueChannels + '개' }
+            ],
+            body: `**${difficulty}** — ${diffDesc}`
+          },
+          {
+            title: '인급동 TOP 5 (바이럴 지수 순)',
+            items: top5Items
+          },
+          {
+            title: '제목 빈출 키워드 TOP 10',
+            body: topWords.length ? topWords.join(' · ') : '빈출 키워드 없음 (다양한 제목 사용)'
+          }
+        ]
+      });
+    }
+  } catch (e) { console.error('[BCC integration]', e); }
+}
 </script>
 
 </body>

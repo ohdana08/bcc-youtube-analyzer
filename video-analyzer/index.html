@@ -10,6 +10,9 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 
+<!-- BCC common (export bar + action guide + PDF) -->
+<link rel="stylesheet" href="../common/bcc-pdf-styles.css">
+
 <!-- GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TYJSYWW5Q6"></script>
 <script>
@@ -816,6 +819,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<!-- BCC common modules -->
+<script src="../common/bcc-claude-api.js"></script>
+<script src="../common/bcc-action-guide.js"></script>
+<script src="../common/bcc-pdf-export.js"></script>
+<script>
+  BCCActionGuide.attach({ toolName: 'video-analyzer', toolTitle: '영상 분석' });
+  BCCPDFExport.attach({ toolName: 'video-analyzer', toolTitle: '영상 분석' });
+</script>
+
 <script>
 // ============================================================
 // Lead gate (shared 30-day localStorage with finder/competitor)
@@ -1327,6 +1339,79 @@ async function analyzeVideo() {
     channel_name: channel.snippet.title || '',
     hit_rating: stats.hitRating
   });
+
+  // ---- BCC common: action guide + PDF export ----
+  try {
+    const _target = video.snippet.title || '';
+    const _ratioPhrase = stats.recentN > 0
+      ? `채널 평균 대비 ${stats.ratioVsAvg.toFixed(2)}배 — ${stats.verdictLabel}`
+      : `채널 평균 비교 불가 (최근 영상 없음)`;
+    if (window.BCCActionGuide) {
+      BCCActionGuide.update('video-analyzer', {
+        title: video.snippet.title || '',
+        channel: channel.snippet.title || '',
+        views: stats.views,
+        likes: stats.likes,
+        comments: stats.comments,
+        likeRatio: stats.likeRatio,
+        ratioVsAvg: stats.ratioVsAvg,
+        rating: stats.verdictLabel,
+        hooks: (stats.hooks || []).map(h => h.name),
+        duration: formatDurationSec(stats.durationSec),
+        category: categoryNameKo(video.snippet.categoryId)
+      }, _target);
+    }
+    if (window.BCCPDFExport) {
+      const _sections = [
+        {
+          title: '성과 지표',
+          kvs: [
+            { k: '조회수', v: fmtNum(stats.views) + '회' },
+            { k: '좋아요', v: fmtNum(stats.likes) },
+            { k: '댓글', v: fmtNum(stats.comments) },
+            { k: '좋아요 비율', v: stats.views > 0 ? stats.likeRatio.toFixed(2) + '%' : '-' }
+          ]
+        },
+        {
+          title: '채널 평균 대비',
+          body: stats.recentN > 0
+            ? `이 영상: ${fmtNum(stats.views)}회 · 채널 최근 ${stats.recentN}개 평균: ${fmtNum(stats.recentAvgViews)}회\n판정: **${stats.verdictLabel}** (평균 대비 ${stats.ratioVsAvg.toFixed(2)}배)`
+            : '채널 최근 영상 정보를 가져오지 못해 비교를 생략했습니다.'
+        },
+        {
+          title: '콘텐츠 메타',
+          kvs: [
+            { k: '제목 글자 수', v: stats.titleLen + '자' },
+            { k: '설명 글자 수', v: fmtNum(stats.descLen) + '자' },
+            { k: '설명 내 링크', v: stats.linkCount + '개' },
+            { k: '해시태그', v: stats.hashtags.length + '개' }
+          ],
+          body: (stats.tags && stats.tags.length)
+            ? '태그: ' + stats.tags.slice(0, 10).join(', ')
+            : ''
+        },
+        {
+          title: '후킹 패턴',
+          items: (stats.hooks && stats.hooks.length)
+            ? stats.hooks.map(h => `**${h.name}** — 매칭: ${h.matched}`)
+            : ['감지된 후킹 패턴 없음 — 클릭 유도 요소 보강을 검토해보세요.']
+        }
+      ];
+      const _kpis = [
+        { label: '조회수', value: fmtNum(stats.views) + '회' },
+        { label: '좋아요', value: fmtNum(stats.likes) },
+        { label: '판정', value: stats.verdictLabel },
+        { label: '좋아요 비율', value: stats.views > 0 ? stats.likeRatio.toFixed(2) + '%' : '-' }
+      ];
+      BCCPDFExport.update({
+        analysisTarget: _target,
+        coverTitle: '영상 분석 리포트',
+        headline: `**${_ratioPhrase}**. 참여도(좋아요/조회수) ${stats.likeRatio.toFixed(2)}%로 **${stats.engagement}** 수준. 후킹 ${stats.hooks.length}종 감지.`,
+        summaryKpis: _kpis,
+        sections: _sections
+      });
+    }
+  } catch (_e) { console.error('[BCC integration]', _e); }
 }
 
 // ============================================================

@@ -10,6 +10,9 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 
+<!-- BCC common (export bar + action guide + PDF) -->
+<link rel="stylesheet" href="../common/bcc-pdf-styles.css">
+
 <!-- GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TYJSYWW5Q6"></script>
 <script>
@@ -885,6 +888,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<!-- BCC common modules -->
+<script src="../common/bcc-claude-api.js"></script>
+<script src="../common/bcc-action-guide.js"></script>
+<script src="../common/bcc-pdf-export.js"></script>
+<script>
+  BCCActionGuide.attach({ toolName: 'competitor-analyzer', toolTitle: '경쟁채널 분석' });
+  BCCPDFExport.attach({ toolName: 'competitor-analyzer', toolTitle: '경쟁채널 분석' });
+</script>
+
 <script>
 // ============================================================
 // Lead gate (shared 30-day localStorage with finder)
@@ -1307,6 +1319,74 @@ async function analyzeChannel() {
     video_count: parseInt(channel.statistics.videoCount || 0),
     analysis_duration_ms: elapsed
   });
+
+  // ---- BCC common: action guide + PDF export ----
+  try {
+    const _channelName = channel.snippet.title || '';
+    const _subs = parseInt(channel.statistics.subscriberCount || 0);
+    const _videoTotal = parseInt(channel.statistics.videoCount || 0);
+    if (window.BCCActionGuide) {
+      BCCActionGuide.update('competitor-analyzer', {
+        channelName: _channelName,
+        subscribers: _subs,
+        recentN: stats.n,
+        avgViews: Math.round(stats.avgViews),
+        avgLikes: Math.round(stats.avgLikes),
+        avgDuration: formatDurationSec(stats.avgDurationSec),
+        dominantDay: stats.weekdayNames[stats.maxWeekdayIdx] + '요일',
+        cycleDays: stats.cycleDays,
+        activity: stats.activityLevel,
+        reachRate: stats.reachRate
+      }, _channelName);
+    }
+    if (window.BCCPDFExport) {
+      const _top5Items = stats.top5.map((row, i) => {
+        const v = row.v;
+        const pub = new Date(v.snippet.publishedAt);
+        return `**${i+1}위.** ${(v.snippet.title || '')} — ${fmtNum(row.views)}회 (${fmtDate(pub)})`;
+      });
+      const _weekdayBody = stats.weekdayNames.map((name, idx) => {
+        const order = [1,2,3,4,5,6,0];
+        const dayIdx = order[idx]; // unused — keep simple
+        return null;
+      });
+      // simpler weekday line
+      const _weekdayLine = ['월','화','수','목','금','토','일'].map((name, i) => {
+        const dayIdx = [1,2,3,4,5,6,0][i];
+        return `${name} ${stats.weekdayCount[dayIdx]}회`;
+      }).join(' · ');
+      BCCPDFExport.update({
+        analysisTarget: _channelName,
+        coverTitle: '경쟁채널 분석 리포트',
+        headline: `구독자 **${fmtNum(_subs)}명** · 총 영상 **${fmtNum(_videoTotal)}개** · 최근 ${stats.n}개 영상 평균 조회수 **${fmtNum(stats.avgViews)}회** (도달률 ${stats.reachRate.toFixed(1)}%). 평균 업로드 주기 **${stats.cycleDays.toFixed(1)}일** — ${stats.activityLevel} 운영.`,
+        summaryKpis: [
+          { label: '구독자', value: fmtNum(_subs) + '명' },
+          { label: '평균 조회수', value: fmtNum(stats.avgViews) },
+          { label: '평균 좋아요', value: fmtNum(stats.avgLikes) },
+          { label: '업로드 주기', value: stats.cycleDays.toFixed(1) + '일' }
+        ],
+        sections: [
+          {
+            title: '핵심 지표 (최근 ' + stats.n + '개 영상)',
+            kvs: [
+              { k: '평균 조회수', v: fmtNum(stats.avgViews) },
+              { k: '평균 좋아요', v: fmtNum(stats.avgLikes) },
+              { k: '평균 댓글', v: fmtNum(stats.avgComments) },
+              { k: '평균 영상 길이', v: formatDurationSec(stats.avgDurationSec) }
+            ]
+          },
+          {
+            title: '업로드 패턴',
+            body: `주요 업로드 요일: **${stats.weekdayNames[stats.maxWeekdayIdx]}요일**\n요일별: ${_weekdayLine}\n평균 주기: ${stats.cycleDays.toFixed(1)}일 — **${stats.activityLevel}** 운영`
+          },
+          {
+            title: 'TOP 5 영상 (조회수 기준)',
+            items: _top5Items
+          }
+        ]
+      });
+    }
+  } catch (_e) { console.error('[BCC integration]', _e); }
 }
 
 // ============================================================
