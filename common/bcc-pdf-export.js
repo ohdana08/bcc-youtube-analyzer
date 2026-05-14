@@ -30,11 +30,10 @@
 
   const JSPDF_URL = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
   const HTML2CANVAS_URL = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-  const LEAD_GAS_URL = 'https://script.google.com/macros/s/AKfycbxzW84zXGAr8WSKdKhvZ-QK7hPBKgxySNvHapGaAalBSzGapAIjz6wL1bbpwzbomho/exec';
-  const KAKAO_URL = 'https://pf.kakao.com/_xbrxjxkxj/chat';
+  // Reads from BCC_CONFIG (common/bcc-config.js loaded first).
+  function _cfg(k, def) { return (window.BCC_CONFIG && window.BCC_CONFIG[k]) || def; }
   // QR encoder API (CORS-safe). Renders KAKAO_URL into a 220×220 PNG.
   const QR_API = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=2&data=';
-  const BCC_SITE_URL = 'https://ohdana08.github.io/bcc-homepage';
 
   let _libsLoaded = false;
   let _state = {
@@ -74,14 +73,19 @@
   }
   function logDeepUsage(toolName, action, extra) {
     try {
+      const url = _cfg('LEAD_GAS_URL', '');
+      if (!url) return;
       const payload = Object.assign({
+        _token: _cfg('LEAD_TOKEN', ''),
+        email: localStorage.getItem('bcc_lead_email') || '',
         name: localStorage.getItem('bcc_lead_name') || '',
         tool: 'BCC 유튜브 분석기',
         subtool: toolName,
         activity: action,
         timestamp: new Date().toISOString()
       }, extra || {});
-      fetch(LEAD_GAS_URL, {
+      if (!payload.email) return;
+      fetch(url, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
@@ -338,7 +342,7 @@
 
   function pdfFooter() {
     return '<div class="pdf-footer">'
-      + '<span>© 2026 BCC | ' + BCC_SITE_URL.replace(/^https?:\/\//, '') + '</span>'
+      + '<span>© 2026 BCC | ' + _cfg('BCC_SITE_URL', 'https://ohdana08.github.io/bcc-homepage').replace(/^https?:\/\//, '') + '</span>'
       + '<span class="pdf-foot-brand">BCC</span>'
       + '</div>';
   }
@@ -453,9 +457,9 @@
       + '<li>월 1회 진척 점검 + 피드백</li>'
       + '</ul>'
       + '<div class="bcc-pdf-cta-link">📱 카카오톡 채널: <strong>BCC 비즈니스커리어컨설팅</strong></div>'
-      + '<div class="bcc-pdf-cta-link" style="margin-top:6px;">🌐 ' + BCC_SITE_URL.replace(/^https?:\/\//, '') + '</div>'
+      + '<div class="bcc-pdf-cta-link" style="margin-top:6px;">🌐 ' + _cfg('BCC_SITE_URL', 'https://ohdana08.github.io/bcc-homepage').replace(/^https?:\/\//, '') + '</div>'
       + '<div style="text-align:center;">'
-      +   '<div class="bcc-pdf-qr"><img src="' + QR_API + encodeURIComponent(KAKAO_URL) + '" alt="QR" crossorigin="anonymous"></div>'
+      +   '<div class="bcc-pdf-qr"><img src="' + QR_API + encodeURIComponent(_cfg('KAKAO_URL', '')) + '" alt="QR" crossorigin="anonymous"></div>'
       +   '<div class="bcc-pdf-qr-cap">QR 스캔 → 카카오톡 1:1 채팅 바로 시작</div>'
       + '</div>'
       + '</div>'

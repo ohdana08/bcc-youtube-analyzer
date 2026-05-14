@@ -24,8 +24,12 @@
 (function () {
   'use strict';
 
-  // Reuse the same Google Apps Script lead URL for deep-usage logging.
-  const LEAD_GAS_URL = 'https://script.google.com/macros/s/AKfycbxzW84zXGAr8WSKdKhvZ-QK7hPBKgxySNvHapGaAalBSzGapAIjz6wL1bbpwzbomho/exec';
+  // GAS Web App URL — see common/bcc-config.js (loaded first by host page).
+  // Fallback to legacy hardcoded URL is intentionally NOT included — if config
+  // is missing, deep-usage logging silently no-ops (fail-safe).
+  function _cfg(k, def) {
+    return (window.BCC_CONFIG && window.BCC_CONFIG[k]) || def;
+  }
 
   // ---- BCC system prompt for Claude ----
   const SYSTEM_PROMPT =
@@ -365,14 +369,21 @@
   // ---- Deep usage logging to GAS ----
   function logDeepUsage(toolName, action, extra) {
     try {
+      const url = _cfg('LEAD_GAS_URL', '');
+      if (!url) return; // config missing — silent no-op
       const payload = Object.assign({
+        _token: _cfg('LEAD_TOKEN', ''),
+        // Email is required by GAS v2.1; deep-usage logs without a verified
+        // lead are skipped (no email available pre-lead-gate anyway).
+        email: localStorage.getItem('bcc_lead_email') || '',
         name: localStorage.getItem('bcc_lead_name') || '',
         tool: 'BCC 유튜브 분석기',
         subtool: toolName,
         activity: action,
         timestamp: new Date().toISOString()
       }, extra || {});
-      fetch(LEAD_GAS_URL, {
+      if (!payload.email) return; // can't update v2 sheet row without email key
+      fetch(url, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)

@@ -1156,6 +1156,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </div>
 
 <!-- BCC common modules -->
+<script src="../common/bcc-config.js"></script>
 <script src="../common/bcc-claude-api.js"></script>
 <script src="../common/bcc-action-guide.js"></script>
 <script src="../common/bcc-pdf-export.js"></script>
@@ -1169,7 +1170,9 @@ let currentResults = [];
 let currentSort = 'views';
 
 // ============ 리드 수집 게이트 ============
-const LEAD_GAS_URL = 'https://script.google.com/macros/s/AKfycbxzW84zXGAr8WSKdKhvZ-QK7hPBKgxySNvHapGaAalBSzGapAIjz6wL1bbpwzbomho/exec';
+// LEAD_GAS_URL + LEAD_TOKEN come from common/bcc-config.js (loaded first).
+const LEAD_GAS_URL = (window.BCC_CONFIG && window.BCC_CONFIG.LEAD_GAS_URL) || '';
+const LEAD_TOKEN = (window.BCC_CONFIG && window.BCC_CONFIG.LEAD_TOKEN) || '';
 const LEAD_TTL_DAYS = 30;
 
 function isLeadValid() {
@@ -1186,6 +1189,7 @@ function clearLead() {
   localStorage.removeItem('bcc_lead_verified');
   localStorage.removeItem('bcc_lead_verified_at');
   localStorage.removeItem('bcc_lead_name');
+  localStorage.removeItem('bcc_lead_email');
 }
 
 function showLeadGate() {
@@ -1261,6 +1265,7 @@ async function submitLead(e) {
   btn.textContent = '전송 중...';
 
   const payload = {
+    _token: LEAD_TOKEN,
     name: name,
     phone: phone,
     email: email,
@@ -1283,6 +1288,7 @@ async function submitLead(e) {
     localStorage.setItem('bcc_lead_verified', 'true');
     localStorage.setItem('bcc_lead_verified_at', new Date().toISOString());
     localStorage.setItem('bcc_lead_name', name);
+    localStorage.setItem('bcc_lead_email', email);
 
     if (typeof gtag === 'function') {
       gtag('event', 'lead_submitted', {
