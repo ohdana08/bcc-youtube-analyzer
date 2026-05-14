@@ -118,25 +118,21 @@
   }
 
   // ---- DOM mount ----
+  // Mount the prominent PDF download bar at the BOTTOM of results — right
+  // before .legal-footer, AFTER the action guide section. Both buttons
+  // (AI guide inside the guide section, PDF here) become visible together
+  // at the bottom of the page after analysis completes.
   function findBarMount() {
     let mount = document.getElementById('bccExportBar');
     if (mount) return mount;
-    const inputSection = document.querySelector('.input-section');
-    if (inputSection && inputSection.parentNode) {
-      const bar = document.createElement('div');
-      bar.id = 'bccExportBar';
-      bar.className = 'bcc-export-bar';
-      // Insert AFTER input-section (so it appears just above status / loader)
-      inputSection.parentNode.insertBefore(bar, inputSection.nextSibling);
-      return bar;
-    }
-    // Fallback: prepend to main
     const main = document.querySelector('main.main');
     if (main) {
+      const legal = main.querySelector('.legal-footer');
       const bar = document.createElement('div');
       bar.id = 'bccExportBar';
-      bar.className = 'bcc-export-bar';
-      main.insertBefore(bar, main.firstChild);
+      bar.className = 'bcc-export-bar bcc-export-bar-bottom';
+      if (legal) main.insertBefore(bar, legal);
+      else main.appendChild(bar);
       return bar;
     }
     return null;
@@ -146,35 +142,25 @@
     if (_state.barEl) return _state.barEl;
     const bar = findBarMount();
     if (!bar) return null;
-    bar.classList.add('bcc-export-bar');
-    // Insert PDF button if not present
+    bar.classList.add('bcc-export-bar', 'bcc-export-bar-bottom');
     if (!document.getElementById('bccPdfBtn')) {
+      // Big gold primary button — visible at the bottom of results.
+      // Demo mode is fully supported: PDF still generates whether or not
+      // a guide has been Claude-generated.
       const btn = document.createElement('button');
       btn.id = 'bccPdfBtn';
       btn.type = 'button';
-      btn.className = 'bcc-export-btn';
+      btn.className = 'bcc-export-btn bcc-export-btn-primary';
       btn.disabled = true;
-      btn.innerHTML = '<span>📄</span><span>BCC 분석 리포트 PDF로 받기</span>';
+      btn.innerHTML = '<span class="bcc-export-icon">📄</span><span>분석 리포트 PDF 다운로드</span>';
       btn.addEventListener('click', triggerDownload);
       bar.appendChild(btn);
-    }
-    // Guide button (sibling — delegates to BCCActionGuide.generate)
-    if (!document.getElementById('bccGuideBtn')) {
-      const btn = document.createElement('button');
-      btn.id = 'bccGuideBtn';
-      btn.type = 'button';
-      btn.className = 'bcc-export-btn';
-      btn.disabled = true;
-      btn.innerHTML = '<span>💡</span><span>BCC 액션 가이드 받기</span>';
-      btn.addEventListener('click', function () {
-        // Scroll to guide section and trigger
-        const sec = document.getElementById('bccGuideSection');
-        if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (window.BCCActionGuide && typeof window.BCCActionGuide.generate === 'function') {
-          window.BCCActionGuide.generate();
-        }
-      });
-      bar.appendChild(btn);
+
+      const hint = document.createElement('div');
+      hint.className = 'bcc-export-hint';
+      hint.id = 'bccExportHint';
+      hint.textContent = '표지 · 핵심 지표 · 상세 분석 · 액션 가이드 · BCC 1:1 컨설팅 안내까지 한 번에';
+      bar.appendChild(hint);
     }
     _state.barEl = bar;
     _state.btnEl = document.getElementById('bccPdfBtn');
@@ -200,16 +186,17 @@
 
   /**
    * Called by host tool after analysis renders.
-   * Enables both PDF and Guide buttons.
+   * Activates the bottom export bar and enables the PDF button.
+   * (Action Guide button lives inside the guide section — see
+   * bcc-action-guide.js — and is enabled separately by its own
+   * update() call.)
    */
   function update(payload) {
     ensureBar();
     _state.payload = payload || {};
     if (_state.barEl) _state.barEl.classList.add('is-active');
     const pdfBtn = document.getElementById('bccPdfBtn');
-    const guideBtn = document.getElementById('bccGuideBtn');
     if (pdfBtn) pdfBtn.disabled = false;
-    if (guideBtn) guideBtn.disabled = false;
   }
 
   async function triggerDownload() {

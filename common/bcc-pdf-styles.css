@@ -3,7 +3,7 @@
    Loaded by all BCC analyzer tools.
    ============================================================ */
 
-/* ---------- On-page Export Bar (PDF + Guide buttons) ---------- */
+/* ---------- On-page Export Bar (PDF download) ---------- */
 .bcc-export-bar {
   display: none;
   gap: 12px;
@@ -11,9 +11,20 @@
   margin: 0 0 16px;
 }
 .bcc-export-bar.is-active { display: flex; }
+
+/* Bottom variant: prominent, centered, sits right above legal-footer */
+.bcc-export-bar-bottom {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0 16px;
+  padding: 28px 24px 24px;
+  background: linear-gradient(180deg, rgba(201,168,76,0.04) 0%, rgba(201,168,76,0.10) 100%);
+  border: 1px solid rgba(201,168,76,0.28);
+  border-radius: 6px;
+}
+
 .bcc-export-btn {
-  flex: 1 1 240px;
-  min-width: 240px;
   background: #0a0a0a;
   color: #C9A84C;
   border: 1px solid #C9A84C;
@@ -44,6 +55,50 @@
 .bcc-export-btn.is-loading {
   pointer-events: none;
   opacity: 0.7;
+}
+
+/* Primary (big gold) variant — used at the bottom of every tool */
+.bcc-export-btn-primary {
+  min-width: 320px;
+  padding: 18px 36px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  background: linear-gradient(135deg, #C9A84C 0%, #e6c869 100%);
+  color: #0a0a0a;
+  border: none;
+  box-shadow: 0 8px 24px rgba(201, 168, 76, 0.22);
+}
+.bcc-export-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e6c869 0%, #C9A84C 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(201, 168, 76, 0.30);
+  color: #0a0a0a;
+}
+.bcc-export-btn-primary:disabled {
+  background: #2a2a2a;
+  color: #777;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.bcc-export-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.bcc-export-hint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #6c6c78;
+  letter-spacing: 0.2px;
+}
+@media (max-width: 640px) {
+  .bcc-export-btn-primary {
+    min-width: 0;
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 15px;
+  }
 }
 
 /* ---------- On-page Action Guide section ---------- */
