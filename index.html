@@ -335,19 +335,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="card-btn">사용하기</div>
       </a>
 
-      <!-- 카드 2: 준비 중 -->
-      <div class="tool-card disabled" id="cardCompetitor" aria-disabled="true">
+      <!-- 카드 2: 활성 -->
+      <a class="tool-card active" href="competitor-analyzer/" id="cardCompetitor">
         <div class="card-icon">🎯</div>
         <h2 class="card-title">경쟁채널 분석</h2>
-        <p class="card-desc">특정 채널 URL을 분석하여 구독자 추이, 평균 조회수, 업로드 패턴을 파악합니다.</p>
+        <p class="card-desc">채널 URL 한 줄로 구독자·평균 조회수·업로드 패턴·TOP 영상·인사이트를 한 번에 확인합니다.</p>
         <div class="card-tags">
           <span class="card-tag">채널 URL</span>
-          <span class="card-tag">성장 분석</span>
+          <span class="card-tag">운영 패턴</span>
           <span class="card-tag">벤치마킹</span>
         </div>
-        <div class="card-btn disabled">준비 중</div>
-        <div class="coming-soon">Coming Soon</div>
-      </div>
+        <div class="card-btn">분석하기</div>
+      </a>
 
       <!-- 카드 3: 준비 중 -->
       <div class="tool-card disabled" id="cardKeyword" aria-disabled="true">
@@ -373,17 +372,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </div>
 
 <script>
-  // 카드 1 클릭 트래킹 (네비게이션 직전 전송)
-  document.getElementById('cardFinder').addEventListener('click', function() {
-    if (typeof gtag === 'function') {
-      gtag('event', 'tool_card_clicked', { tool_name: 'finder' });
-    }
-  });
+  // 활성 카드 클릭 트래킹
+  function trackClick(cardId, name) {
+    const el = document.getElementById(cardId);
+    if (!el) return;
+    el.addEventListener('click', function() {
+      if (typeof gtag === 'function') {
+        gtag('event', 'tool_card_clicked', { tool_name: name });
+      }
+    });
+  }
+  trackClick('cardFinder', 'finder');
+  trackClick('cardCompetitor', 'competitor');
 
   // 준비 중 카드 호버 트래킹 (세션 내 카드별 1회만)
   const hoverFired = {};
   function trackHover(cardId, name) {
     const el = document.getElementById(cardId);
+    if (!el) return;
     el.addEventListener('mouseenter', function() {
       if (hoverFired[name]) return;
       hoverFired[name] = true;
@@ -392,7 +398,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }
     });
   }
-  trackHover('cardCompetitor', 'competitor');
   trackHover('cardKeyword', 'keyword');
 </script>
 
