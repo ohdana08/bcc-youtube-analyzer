@@ -1699,9 +1699,11 @@ function bccPublishFinder(keyword) {
         keyword: keyword,
         total: total,
         avgViral: avgViral,
+        avgViews: avgViews,
         shortRatio: shortRatio,
         uniqueChannels: uniqueChannels,
-        difficulty: difficulty
+        difficulty: difficulty,
+        topVideoTitle: (top5[0] && top5[0].title) ? top5[0].title : ''
       }, keyword);
     }
     if (window.BCCPDFExport) {

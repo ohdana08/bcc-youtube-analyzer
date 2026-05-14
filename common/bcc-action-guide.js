@@ -97,26 +97,226 @@
     }
   };
 
-  // ---- Demo fallback ----
-  function buildDemoGuide(toolName, d) {
-    const ctx = TOOL_CONTEXTS[toolName] || { label: '분석' };
-    let s3Body = '- 제목 예시:\n    · 본인 관점·경험을 명확히 드러내는 1줄\n    · 분석에서 발견된 후킹 패턴을 활용한 1줄\n- 썸네일 키워드: 시선 끄는 단어 1개 + 본인/제품 이미지\n- 첫 5초 후킹: 핵심 가치 제시 + 다음 장면 예고';
-    let s5Body = '본 분석과 인접한 토픽으로 1~2개 추가 분석을 진행하세요. 영상 분석 도구로 잘 된 콘텐츠의 메타 패턴을 추출해보세요.';
-    if (toolName === 'finder') {
-      s5Body = '발견된 빈출 키워드를 황금키워드 발견 도구로 재검증해보세요. 상위 채널 한두 곳은 경쟁채널 분석 도구로 운영 패턴을 추가 분석할 수 있습니다.';
-    } else if (toolName === 'competitor-analyzer') {
-      s5Body = '이 채널의 가장 인기 있는 영상을 영상 분석 도구로 자세히 진단해보세요. 채널 주력 키워드는 황금키워드 발견 도구로 진입 가능성을 검증하세요.';
-    } else if (toolName === 'video-analyzer') {
-      s5Body = '이 영상의 채널 전체 운영 패턴을 경쟁채널 분석 도구로 분석해보세요. 영상 제목의 핵심 키워드를 황금키워드 발견 도구로 시장 크기를 검증하세요.';
-    } else if (toolName === 'keyword-finder') {
-      s5Body = '경쟁도 등급에 맞춰 변형 키워드를 추가 검색하거나, TOP 10 채널 한두 곳을 경쟁채널 분석 도구로 운영 패턴까지 살펴보세요.';
+  // ============================================================
+  // Demo fallback guides — interpolate live analysis data so the
+  // 5-step guide reads as if it was generated for THIS specific
+  // analysis target, not a generic template. Used when the Claude
+  // proxy is not configured (no_proxy) or when the proxy response
+  // fails to parse.
+  // ============================================================
+
+  function _safeNum(n, fallback) {
+    n = Number(n);
+    return isFinite(n) ? n : (fallback != null ? fallback : 0);
+  }
+  function _fmtKo(n) { return _safeNum(n).toLocaleString('ko-KR'); }
+  function _fmtCompact(n) {
+    n = _safeNum(n);
+    if (n >= 1e8) return (n / 1e8).toFixed(1).replace(/\.0$/, '') + '억';
+    if (n >= 1e4) return (n / 1e4).toFixed(1).replace(/\.0$/, '') + '만';
+    return _fmtKo(n);
+  }
+
+  // ---- video-analyzer demo ----
+  function buildVideoDemoGuide(d) {
+    const title = d.title || '이 영상';
+    const channel = d.channel || '해당 채널';
+    const views = _fmtKo(d.views);
+    const rating = d.rating || '판정 미확정';
+    const hasRatio = typeof d.ratioVsAvg === 'number' && d.ratioVsAvg > 0;
+    const ratio = hasRatio ? d.ratioVsAvg.toFixed(2) + '배' : '평균 비교 불가';
+    const hooks = (Array.isArray(d.hooks) && d.hooks.length) ? d.hooks.join(' · ') : '특별한 후킹 없음';
+    const hasHooks = Array.isArray(d.hooks) && d.hooks.length > 0;
+    const duration = d.duration || '-';
+    const likeRatio = (typeof d.likeRatio === 'number' && d.views > 0) ? d.likeRatio.toFixed(2) + '%' : '-';
+    let engagement = '판정 보류';
+    if (typeof d.likeRatio === 'number' && d.views > 0) {
+      if (d.likeRatio >= 5) engagement = '높음';
+      else if (d.likeRatio >= 2) engagement = '보통';
+      else engagement = '낮음';
     }
+
     return {
-      step1: { title: '핵심 성공 요인 분석', body: '이 ' + ctx.label + ' 결과에서 주목할 패턴을 정리합니다. 상위 콘텐츠들의 공통점(주제·길이·형식)을 먼저 파악하고, 데이터로 드러난 차별화 포인트를 명확히 하세요. 평균과 상위권의 격차가 큰 항목이 곧 진입 레버입니다.' },
-      step2: { title: '우리 적용 포인트', body: '본인 채널의 강점과 분석 결과를 교차로 검토하세요. 자신만의 관점·경험·산업 지식을 어떤 각도로 녹일지 결정하면 차별화가 만들어집니다. 데이터에 본인 색을 입히는 것이 핵심입니다.' },
-      step3: { title: '첫 콘텐츠 제안', body: s3Body },
-      step4: { title: '7~30일 실행 계획', body: 'Day 1~7: 첫 콘텐츠 1개 제작·업로드 + 클릭률·조회수 측정\nDay 8~14: 첫 영상 데이터 기반 2~3개 변형 제작 (제목/썸네일/포맷 중 1개 변수만 변경)\nDay 15~30: 잘 된 변형은 시리즈화, 안 된 변형은 폐기. 4번째 영상부터는 누적 학습 데이터 활용.' },
-      step5: { title: '다음 추천', body: s5Body },
+      step1: {
+        title: '핵심 성공 요인 분석',
+        body: '이 영상 "' + title + '"은 ' + channel + '의 채널 평균 대비 **' + ratio + '** 성과를 기록한 **' + rating + '**입니다. 조회수 **' + views + '회**, 참여도(좋아요/조회수) **' + likeRatio + '** (**' + engagement + '** 수준). 후킹 패턴: **' + hooks + '**. 이 영상이 평균을 상회/하회하게 만든 가장 강한 변수는 ' + (hasHooks ? '제목의 후킹 구조' : '주제·포맷 매칭') + '과 영상 길이(' + duration + ')의 합입니다. 같은 후킹을 다른 길이에 적용했을 때 어떻게 달라지는지 비교 분석할 가치가 있습니다.'
+      },
+      step2: {
+        title: '우리 적용 포인트',
+        body: '본인 채널과 "' + channel + '"의 차이를 3가지 축으로 점검하세요: ① 후킹(이 영상이 ' + hooks + '을 썼다면 본인은 어떤 후킹을 쓰는가) ② 영상 길이(' + duration + '이 통한 이 시장에서 본인은 비슷한 길이를 시도하는가) ③ 첫 5초 메시지(이 영상의 첫 5초와 본인 영상의 첫 5초를 직접 비교). 본인의 강점·관점을 ' + (hasHooks ? hooks + ' 후킹과 결합' : '명확한 콘셉트로 강화') + '하면 차별화 지점이 만들어집니다.'
+      },
+      step3: {
+        title: '첫 콘텐츠 제안',
+        body: '벤치마킹한 "' + title + '" 패턴을 참고해 1주 안에 만들 첫 콘텐츠:\n- 제목 예시:\n    · ' + (hasHooks ? '"' + hooks + '" 후킹을 본인 도메인에 적용한 1줄' : '강한 1줄 후킹(숫자·공포·권위·호기심·역설 중 1개)') + '\n    · 본인 경험·관점이 분명히 드러나는 1줄\n- 썸네일 키워드: 시선 끄는 단어 1개 + 본인 얼굴/제품 이미지\n- 영상 길이: ' + duration + '을 기준으로 ±20% 범위 시도\n- 첫 5초 후킹: ' + (hasHooks ? hooks + ' 패턴 변형 + 본인만의 가치 제안' : '핵심 메시지 즉시 제시 + 다음 장면 예고')
+      },
+      step4: {
+        title: '7~30일 실행 계획',
+        body: 'Day 1~7: 첫 영상 제작·업로드 (' + duration + ' 기준 길이) + 24시간 조회수·CTR 측정\nDay 8~14: 첫 영상 데이터 기반 2~3개 변형 제작 — 후킹 1개 변수만 바꿔서 ' + (hasHooks ? hooks + '와 다른 패턴 비교 실험' : '여러 후킹 패턴을 A/B 비교') + '\nDay 15~30: 잘 된 변형은 시리즈화, 안 된 변형은 폐기. 4번째 영상부터 본인 채널 평균이 이 영상의 **' + ratio + '** 성과를 얼마나 따라잡았는지 점검.'
+      },
+      step5: {
+        title: '다음 추천',
+        body: '① "' + channel + '" 채널 전체 운영 패턴을 BCC 경쟁채널 분석 도구로 분석 — 이 영상이 우연인지 채널의 일관된 패턴인지 검증\n② "' + title + '"의 핵심 키워드를 BCC 황금키워드 발견 도구로 시장 진입 가능성 검증\n③ 같은 ' + (hasHooks ? hooks + ' 후킹' : '주제') + '을 쓴 다른 영상 2~3개를 본 도구로 추가 분석해 이 패턴이 반복 가능한지 확인'
+      },
+      _demo: true
+    };
+  }
+
+  // ---- competitor-analyzer demo ----
+  function buildChannelDemoGuide(d) {
+    const channel = d.channelName || '이 채널';
+    const subs = _fmtKo(d.subscribers);
+    const recentN = _safeNum(d.recentN, 0);
+    const avgViews = _fmtKo(d.avgViews);
+    const dominantDay = d.dominantDay || '주중';
+    const cycle = (typeof d.cycleDays === 'number' && d.cycleDays > 0) ? d.cycleDays.toFixed(1) + '일' : '주기 미확정';
+    const activity = d.activity || '운영 패턴 미확정';
+    const reach = (typeof d.reachRate === 'number') ? d.reachRate.toFixed(1) + '%' : '-';
+
+    return {
+      step1: {
+        title: '핵심 성공 요인 분석',
+        body: '"' + channel + '"(구독자 **' + subs + '명**)의 최근 ' + recentN + '개 영상 평균 조회수는 **' + avgViews + '회**, 구독자 대비 도달률 **' + reach + '**입니다. 주요 업로드는 **' + dominantDay + '**, 업로드 주기 **' + cycle + '**으로 **' + activity + '** 운영 상태. 이 채널의 핵심 성공 요인은 ① 일관된 업로드 리듬(' + cycle + ') ② ' + dominantDay + ' 업로드 타이밍 ③ 구독자 대비 ' + reach + ' 도달률을 만드는 콘텐츠 매력도. 도달률이 10%를 넘으면 충성 시청층이 형성된 신호, 5% 미만이면 신규 유입 의존이 큼.'
+      },
+      step2: {
+        title: '우리 적용 포인트',
+        body: '본인 채널 운영을 "' + channel + '"과 3가지 축으로 비교하세요: ① 업로드 주기(이 채널은 ' + cycle + '마다 — 본인은 그보다 느린가 빠른가) ② 타이밍(' + dominantDay + ' 업로드 — 본인 채널의 주요 업로드 요일은) ③ 도달률(이 채널은 ' + reach + ' — 본인은 구독자 대비 몇 %인가). 가장 즉시 따라할 수 있는 건 업로드 리듬. 본인 채널의 주기를 ' + cycle + ' 기준으로 맞춰보는 실험부터 권장합니다.'
+      },
+      step3: {
+        title: '첫 콘텐츠 제안',
+        body: '벤치마킹 "' + channel + '" 패턴 기반 첫 콘텐츠:\n- 업로드 시점: 다가오는 ' + dominantDay + ' (이 채널의 주력 타이밍)\n- 영상 컨셉: 이 채널 TOP 5 영상의 공통 주제·포맷을 본인 도메인으로 변형\n- 제목: 본인 강점·관점을 명확히 드러내되, 이 채널 TOP 영상의 후킹 구조 참고\n- 길이: 이 채널 평균 영상 길이 기준 ±20%\n- 첫 5초: 본인 도메인에서 ' + avgViews + '회 평균 시청자가 가장 궁금해할 1가지 메시지'
+      },
+      step4: {
+        title: '7~30일 실행 계획',
+        body: 'Day 1~7: ' + dominantDay + '에 첫 영상 업로드 + 조회수/도달률 측정 → "' + channel + '"의 ' + reach + ' 도달률과 비교\nDay 8~14: 업로드 주기를 ' + cycle + '로 맞춰 2~3번째 영상 제작·업로드. 본인 채널이 ' + activity + ' 상태에 진입 가능한지 시도\nDay 15~30: 누적 4~6편의 데이터로 본인 채널의 "주요 업로드 요일"과 "평균 도달률"이 형성되기 시작. 잘 되는 패턴을 시리즈화.'
+      },
+      step5: {
+        title: '다음 추천',
+        body: '① "' + channel + '"의 TOP 5 인기 영상을 BCC 영상 분석 도구로 한 편씩 깊이 분석 — 평균 대비 어떤 영상이 왜 더 잘 됐는지 패턴 추출\n② 이 채널이 주로 다루는 키워드를 BCC 황금키워드 발견 도구로 검증 — 본인이 진입 가능한 황금 키워드인지 확인\n③ 인접 카테고리 채널 1~2개를 본 도구로 추가 분석해 시장의 일반 패턴 vs 이 채널만의 특이점을 분리'
+      },
+      _demo: true
+    };
+  }
+
+  // ---- finder demo ----
+  function buildFinderDemoGuide(d) {
+    const keyword = d.keyword || '검색 키워드';
+    const total = _safeNum(d.total, 0);
+    const avgViral = _fmtKo(d.avgViral);
+    const avgViewsRaw = _safeNum(d.avgViews, 0);
+    const avgViews = avgViewsRaw > 0 ? _fmtKo(avgViewsRaw) : null;
+    const shortRatio = (typeof d.shortRatio === 'number') ? d.shortRatio + '%' : '-';
+    const shortRatioNum = _safeNum(d.shortRatio, 0);
+    const uniqueChannels = _safeNum(d.uniqueChannels, 0);
+    const difficulty = d.difficulty || '난이도 미확정';
+    const topTitle = d.topVideoTitle || '';
+
+    let strategy;
+    if (difficulty === '낮음') strategy = '바로 진입 가능 — 본인 첫 영상을 빠르게 업로드하세요';
+    else if (difficulty === '보통') strategy = '본인만의 관점·각도를 분명히 한 차별화 콘텐츠 필요';
+    else if (difficulty === '높음') strategy = '직접 경쟁보다 변형 키워드 / 틈새 각도로 우회 권장';
+    else strategy = '레드오션 — 본 키워드 단독 경쟁은 비효율적, 좁힌 틈새 키워드로 우회';
+
+    const formatRec = shortRatioNum > 50 ? '숏폼(4분 미만) 우선' : (shortRatioNum < 20 ? '미디엄~롱폼 위주' : '숏폼·미디엄 혼합');
+
+    return {
+      step1: {
+        title: '핵심 성공 요인 분석',
+        body: '"' + keyword + '" 검색 결과 ' + total + '개 영상의 평균 바이럴 지수는 **' + avgViral + '/일**' + (avgViews ? ', 평균 조회수 **' + avgViews + '회**' : '') + ', 숏폼 비중 **' + shortRatio + '**, 고유 채널 **' + uniqueChannels + '개**, 시장 진입 난이도 **' + difficulty + '**입니다.' + (topTitle ? ' 1위 영상 "' + topTitle + '"이 시장의 모범 사례.' : '') + ' 이 시장의 핵심 패턴: ① 숏폼 ' + shortRatio + '이 시장의 주력 포맷인지 보조 포맷인지 ② 채널 ' + uniqueChannels + '개가 흩어져 있다면 진입 기회 / 소수 채널이 독점한다면 차별화 필수 ③ 평균 바이럴 ' + avgViral + '이 본인 채널의 최소 목표 수치.'
+      },
+      step2: {
+        title: '우리 적용 포인트',
+        body: '본인 콘텐츠를 "' + keyword + '" 시장에 진입시키는 3축: ① 포맷 결정(시장의 숏폼 비중 ' + shortRatio + '을 따라갈지 역으로 차별화할지) ② 차별화 각도(본인 도메인·경험·관점을 어떤 단어로 제목에 박을지) ③ 진입 깊이(' + difficulty + ' 난이도 → ' + strategy + '). 가장 빠른 실행: ' + (topTitle ? '"' + topTitle + '" 등 TOP 5 영상의 제목 패턴을 분석' : '본 검색 결과 TOP 5 영상의 제목 패턴을 분석') + '하고 그 중 1개 패턴을 본인 도메인으로 변형.'
+      },
+      step3: {
+        title: '첫 콘텐츠 제안',
+        body: '"' + keyword + '" 시장 진입용 첫 콘텐츠:\n- 제목 패턴: ' + (topTitle ? '1위 영상 "' + topTitle + '"의 후킹 구조 + 본인 관점 1단어' : '본 분석의 빈출 키워드 + 본인 관점 1단어') + '\n- 포맷: ' + formatRec + '\n- 후킹: 첫 5초에 "' + keyword + '"라는 단어 명시 + 본인이 다룰 구체적 각도 예고\n- 썸네일: ' + keyword + ' 관련 핵심 시각 요소 1개 + 본인 얼굴/제품\n- 목표 바이럴: ' + avgViral + '/일 도달'
+      },
+      step4: {
+        title: '7~30일 실행 계획',
+        body: 'Day 1~7: 첫 영상 업로드 + 24시간 바이럴 지수 측정 → ' + avgViral + '/일 시장 평균 대비 어디 위치인지 확인\nDay 8~14: 데이터 기반 2~3개 변형 제작. 잘 된 제목 패턴을 시리즈화, 안 된 패턴은 폐기\nDay 15~30: 4~6편 누적 시점에 본인 채널 평균 바이럴 vs 시장 평균(' + avgViral + ') 비교. 시장 평균에 근접하면 ' + difficulty + ' 시장에서 자리를 잡은 신호.'
+      },
+      step5: {
+        title: '다음 추천',
+        body: '① 본 분석에서 빈출 단어로 나온 키워드 1~2개를 BCC 황금키워드 발견 도구로 추가 분석 — 본 키워드 변형판이 더 황금일 수 있음\n② TOP 5 채널 중 1~2개를 BCC 경쟁채널 분석 도구로 깊이 분석 — 이 시장의 승자가 어떻게 운영하는지 패턴 추출\n③ ' + (topTitle ? '"' + topTitle + '"을 BCC 영상 분석 도구로 분석' : 'TOP 5 영상 중 1개를 BCC 영상 분석 도구로 분석') + ' — 단일 영상의 후킹·메타 패턴 파악'
+      },
+      _demo: true
+    };
+  }
+
+  // ---- keyword-finder demo ----
+  function buildKeywordDemoGuide(d) {
+    const keyword = d.keyword || '검색 키워드';
+    const avgViews = _fmtKo(d.avgViews);
+    const avgSubs = _fmtCompact(d.avgSubs);
+    const smallRatio = (typeof d.smallRatio === 'number') ? Math.round(d.smallRatio * 100) + '%' : '-';
+    const bigRatio = (typeof d.bigRatio === 'number') ? Math.round(d.bigRatio * 100) + '%' : '-';
+    const bigRatioNum = _safeNum(d.bigRatio, 0);
+    const competition = d.competition || '경쟁도 미확정';
+    const isGold = competition.indexOf('황금') !== -1;
+    const isRed = competition.indexOf('레드') !== -1;
+    const trend = d.trend || '트렌드 미확정';
+    const isGrowing = trend.indexOf('성장') !== -1;
+    const isDeclining = trend.indexOf('하향') !== -1;
+    const recent90 = (typeof d.recent90Ratio === 'number') ? Math.round(d.recent90Ratio * 100) + '%' : '-';
+
+    const signalText = isGold
+      ? '소형 채널이 ' + smallRatio + ' 비율로 활동하며 평균 조회수 ' + avgViews + '회 → 진입 우호'
+      : isRed
+        ? '대형 채널이 ' + bigRatio + ' 비율로 시장 장악 → 직접 경쟁 회피 필요'
+        : '적정 경쟁 시장 → 차별화 콘텐츠로 진입 가능';
+    const trendAdvice = isGrowing
+      ? '뜨고 있는 시장 — 빨리 진입해 선점'
+      : isDeclining
+        ? '식어가는 시장 — 회피 권장, 다른 키워드 모색'
+        : '꾸준한 수요 — 안정적 시리즈화 가능';
+    const fastAction = isGold
+      ? '바로 1편 제작·테스트'
+      : isRed
+        ? '변형 키워드 추가 검색 또는 좁힌 틈새 각도'
+        : '관련 확장 키워드 결합한 제목 시도';
+    const thumbnailWarning = bigRatioNum >= 0.5
+      ? '대형 채널(' + bigRatio + ')과 시각적 차별화 필수 — 비슷한 톤으로 경쟁 X'
+      : '본인 색을 명확히 드러내는 톤으로 통일';
+
+    return {
+      step1: {
+        title: '핵심 성공 요인 분석',
+        body: '"' + keyword + '" 키워드는 **' + competition + '** · **' + trend + '** 시장입니다. 상위 50개 평균 조회수 **' + avgViews + '회**, 평균 구독자 **' + avgSubs + '명**, 소형 채널(1만 미만) 비율 **' + smallRatio + '**, 대형 채널(100만+) 비율 **' + bigRatio + '**. 최근 90일 영상 비율 **' + recent90 + '**. 이 시장의 핵심 신호: ' + signalText + '.'
+      },
+      step2: {
+        title: '우리 적용 포인트',
+        body: '"' + keyword + '" 시장 진입 결정의 3축: ① 본인 채널 규모가 시장의 ' + competition + ' 등급에 맞는가 (소형 채널이라면 황금/보통 시장이 유리) ② 트렌드 ' + trend + ' → ' + trendAdvice + ' ③ 본인이 ' + avgViews + '회 평균을 만들 콘텐츠 역량이 있는가. 가장 빠른 액션: ' + fastAction + '.'
+      },
+      step3: {
+        title: '첫 콘텐츠 제안',
+        body: '"' + keyword + '" 키워드 진입용 첫 콘텐츠:\n- 제목 패턴: "' + keyword + '"를 명시 + 본 분석의 관련 확장 키워드 1개 결합\n- 포맷: 시장 평균 길이 기준 (TOP 10 영상 평균 길이를 참고)\n- 후킹: 첫 5초에 "' + keyword + '" 명시 + 본인 도메인 각도 제시\n- 썸네일: "' + keyword + '" 시각 단서 + 본인 얼굴/제품. ' + thumbnailWarning + '\n- 목표: 시장 평균 ' + avgViews + '회의 50% 이상'
+      },
+      step4: {
+        title: '7~30일 실행 계획',
+        body: 'Day 1~7: 첫 영상 업로드 + 24시간 조회수 측정 → 시장 평균 ' + avgViews + '회 대비 어디 위치인지 확인\nDay 8~14: 본 분석에서 발견한 관련 확장 키워드로 2~3편 추가 제작. ' + competition + ' 시장에서 ' + trend + ' 흐름 활용\nDay 15~30: 4~6편 누적 후 본인 채널의 "' + keyword + '" 시리즈 평균 조회수 산정. 시장 평균(' + avgViews + ') 대비 50% 이상이면 본 시장에서 자리 잡은 신호.'
+      },
+      step5: {
+        title: '다음 추천',
+        body: '① 본 분석의 TOP 10 영상 중 성과가 가장 높은 1~2개를 BCC 영상 분석 도구로 깊이 분석 — 어떤 후킹·메타가 이 시장에서 통하는지 추출\n② TOP 10 채널 중 본인과 규모가 비슷한 채널 1~2개를 BCC 경쟁채널 분석 도구로 분석 — 진입 전략의 모범 사례 확보\n③ 관련 확장 키워드 1~2개를 본 도구로 재검색해 ' + (isGold ? '더 황금인 키워드' : isRed ? '진입 쉬운 변형 키워드' : '차별화 가능한 변형 키워드') + '를 추가 발굴'
+      },
+      _demo: true
+    };
+  }
+
+  // Tool-specific demo dispatcher.
+  function buildDemoGuide(toolName, d) {
+    d = d || {};
+    if (toolName === 'video-analyzer') return buildVideoDemoGuide(d);
+    if (toolName === 'competitor-analyzer') return buildChannelDemoGuide(d);
+    if (toolName === 'finder') return buildFinderDemoGuide(d);
+    if (toolName === 'keyword-finder') return buildKeywordDemoGuide(d);
+    // Generic fallback for unknown tools
+    return {
+      step1: { title: '핵심 성공 요인 분석', body: '이 분석 결과에서 주목할 패턴을 정리하세요. 상위 콘텐츠들의 공통점(주제·길이·형식)을 먼저 파악하고, 데이터로 드러난 차별화 포인트를 명확히 하세요.' },
+      step2: { title: '우리 적용 포인트', body: '본인 채널의 강점과 분석 결과를 교차로 검토하세요. 자신만의 관점·경험·산업 지식을 어떤 각도로 녹일지 결정하면 차별화가 만들어집니다.' },
+      step3: { title: '첫 콘텐츠 제안', body: '- 제목: 분석된 후킹 패턴을 활용한 명확한 1줄\n- 썸네일: 시선 끄는 단어 1개 + 본인/제품 이미지\n- 후킹: 첫 5초 안에 핵심 가치 제시' },
+      step4: { title: '7~30일 실행 계획', body: 'Day 1~7: 첫 콘텐츠 1개 제작·업로드 + 데이터 측정\nDay 8~14: 첫 영상 데이터 기반 2~3개 변형 제작\nDay 15~30: 잘 된 변형의 시리즈화, 안 된 변형은 폐기' },
+      step5: { title: '다음 추천', body: '본 분석과 인접한 토픽으로 1~2개 추가 분석을 진행하세요.' },
       _demo: true
     };
   }
