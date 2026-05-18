@@ -13,34 +13,72 @@
 (function () {
   'use strict';
 
+  // 잇툴즈 허브(=메인) 절대 URL — 🏠 잇툴즈 로고/푸터에서 링크 대상
+  // 별도 저장소(bcc-homepage)에 있어 절대 URL로 연결합니다.
+  var ITTOOLZ_HUB_URL = 'https://ohdana08.github.io/bcc-homepage/tools/';
+
+  // 잇툴즈 카테고리 레지스트리 — 글로벌(상단) 네비에 노출되는 분석기 카테고리
+  // id       : 카테고리 식별자 (도구의 category 필드와 매칭, BCCNav.attach({currentCategory}))
+  // label    : 글로벌 네비에 보이는 라벨
+  // baseUrl  : 카테고리 랜딩 절대 URL (해당 카테고리 사이트의 루트)
+  // status   : 'active' = 진입 가능, 'soon' = Coming Soon (클릭 비활성)
+  var CATEGORIES = [
+    {
+      id: 'youtube',
+      label: '유튜브 분석기',
+      baseUrl: 'https://ohdana08.github.io/bcc-youtube-analyzer/',
+      status: 'active'
+    },
+    {
+      id: 'blog',
+      label: '블로그 분석기',
+      baseUrl: '',
+      status: 'soon'
+    },
+    {
+      id: 'smartstore',
+      label: '스마트스토어 분석기',
+      baseUrl: '',
+      status: 'soon'
+    },
+    {
+      id: 'instagram',
+      label: '인스타그램 분석기',
+      baseUrl: '',
+      status: 'soon'
+    }
+  ];
+
   // 잇툴즈 도구 레지스트리 — 새 도구 추가는 이 배열에만 한 줄 추가하면
-  // 모든 도구 페이지의 top nav + cross-tools 카드에 자동 반영됩니다.
+  // 모든 도구 페이지의 카테고리 내부 네비 + cross-tools 카드에 자동 반영됩니다.
   // id          : 디렉토리 이름과 동일 (BCCNav.attach의 currentTool 값과 매칭)
-  // path        : 상대 경로 (다른 도구 페이지의 ../{path}/ 로 링크됨)
+  // category    : 위 CATEGORIES 중 하나의 id (도구가 속한 카테고리)
+  // path        : 카테고리 baseUrl 기준 상대 경로 (다른 도구 페이지의 ../{path}/ 로도 동작)
   // title       : 정식 명칭 (cross-tools 카드 및 SEO에 사용)
-  // navTitle    : top nav 짧은 라벨 (공간 절약, 생략 시 title 사용)
+  // navTitle    : 네비 짧은 라벨 (공간 절약, 생략 시 title 사용)
   // icon        : 카드 이모지
   // desc        : cross-tools 카드 한 줄 설명
+  // 사용자 워크플로우 순서: 발굴 → 분석 → 다음 콘텐츠 키워드 → (고난이도) 경쟁사
   var TOOLS = [
     {
-      id: 'finder', path: 'finder/',
+      id: 'finder', category: 'youtube', path: 'finder/',
       title: '잘 나가는 영상 찾기', navTitle: '잘나가는 영상 찾기',
       icon: '🔥', desc: '키워드로 인기 영상 + 바이럴 지수 분석'
     },
     {
-      id: 'competitor-analyzer', path: 'competitor-analyzer/',
-      title: '경쟁채널 분석', navTitle: '경쟁채널 분석',
-      icon: '🎯', desc: '채널 URL로 운영 패턴·TOP5 영상 진단'
+      id: 'video-analyzer', category: 'youtube', path: 'video-analyzer/',
+      title: '영상 분석', navTitle: '영상분석',
+      icon: '🎬', desc: '영상 URL로 성과·후킹·콘텐츠 메타 진단'
     },
     {
-      id: 'keyword-finder', path: 'keyword-finder/',
+      id: 'keyword-finder', category: 'youtube', path: 'keyword-finder/',
       title: '황금키워드 발견', navTitle: '황금키워드 찾기',
       icon: '💎', desc: '키워드 경쟁도·트렌드·관련 키워드 발굴'
     },
     {
-      id: 'video-analyzer', path: 'video-analyzer/',
-      title: '영상 분석', navTitle: '영상분석',
-      icon: '🎬', desc: '영상 URL로 성과·후킹·콘텐츠 메타 진단'
+      id: 'competitor-analyzer', category: 'youtube', path: 'competitor-analyzer/',
+      title: '경쟁채널 분석', navTitle: '경쟁채널 분석',
+      icon: '🎯', desc: '채널 URL로 운영 패턴·TOP5 영상 진단'
     }
   ];
 
@@ -57,6 +95,12 @@
 
     // BCC 홈페이지
     BCC_SITE_URL: 'https://ohdana08.github.io/bcc-homepage',
+
+    // 잇툴즈 허브 절대 URL (위에 정의)
+    ITTOOLZ_HUB_URL: ITTOOLZ_HUB_URL,
+
+    // 잇툴즈 카테고리 레지스트리 (위에 정의)
+    CATEGORIES: Object.freeze(CATEGORIES.map(function (c) { return Object.freeze(c); })),
 
     // 잇툴즈 도구 레지스트리 (위에 정의)
     TOOLS: Object.freeze(TOOLS.map(function (t) { return Object.freeze(t); }))

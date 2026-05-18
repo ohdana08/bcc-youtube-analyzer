@@ -1,35 +1,50 @@
 /* ============================================================
-   BCC 잇툴즈 — 공통 네비게이션 모듈
+   BCC 잇툴즈 — 공통 네비게이션 모듈 (2단 구조)
    ------------------------------------------------------------
    각 도구 페이지(finder/competitor-analyzer/video-analyzer/
    keyword-finder)에 다음을 자동 주입:
 
-   1) 상단 sticky 네비게이션 바
-      - 🏠 잇툴즈 로고 → ../ (잇툴즈 메인 = analyzer 랜딩)
-      - 4개 도구 메뉴 (현재 페이지 골드 highlight)
-      - 모바일(720px↓): 햄버거 메뉴 토글
+   1) 상단 sticky 글로벌 네비 (.bcc-topnav)
+      - 🏠 잇툴즈 로고 → BCC_CONFIG.ITTOOLZ_HUB_URL
+      - 4개 카테고리 메뉴 (현재 카테고리 골드 highlight)
+      - Coming Soon 카테고리는 disabled (클릭 비활성)
 
-   2) 결과 페이지 하단 "다른 도구 사용해보기" 카드 3개
-      (현재 도구 제외)
+   2) 그 아래 카테고리 내부 네비 (.bcc-subnav)
+      - 현재 카테고리의 모든 도구를 가로 메뉴로 노출
+      - 현재 도구는 골드 강조
+      - currentCategory 가 없거나 매칭되는 도구가 없으면 미렌더
 
-   3) 기존 사이드바의 sidebar-nav 블록은 런타임에 제거
-      (중복 방지)
+   3) 모바일(720px↓): 햄버거 메뉴 — 카테고리 + 도구를 한 패널에 결합
+
+   4) 결과 페이지 하단 "다른 도구 사용해보기" 카드
+      (같은 카테고리 내 도구만, 현재 도구 제외)
+
+   5) 기존 사이드바의 sidebar-nav 블록은 런타임에 제거(중복 방지)
 
    도구 추가는 common/bcc-config.js 의 TOOLS 배열에만 한 줄 추가.
+   카테고리 추가는 CATEGORIES 배열에만 한 줄 추가.
 
    GA4 events:
-      - topnav_clicked      { source_tool, target_tool }
+      - topnav_clicked      { source_tool, target_category }
+      - subnav_clicked      { source_tool, target_tool }
       - cross_tool_clicked  { source_tool, target_tool }
       - mobile_nav_opened   { source_tool }
    ============================================================ */
 (function () {
   'use strict';
 
-  var NAV_HEIGHT = 56;
+  var NAV_H_TOP = 56;
+  var NAV_H_SUB = 44;
   var CSS_ID = 'bcc-nav-styles';
 
   function tools() {
     return (window.BCC_CONFIG && window.BCC_CONFIG.TOOLS) || [];
+  }
+  function categories() {
+    return (window.BCC_CONFIG && window.BCC_CONFIG.CATEGORIES) || [];
+  }
+  function hubUrl() {
+    return (window.BCC_CONFIG && window.BCC_CONFIG.ITTOOLZ_HUB_URL) || '/';
   }
   function escapeHtml(s) {
     return (s == null ? '' : String(s))
@@ -45,9 +60,11 @@
 
   function injectStyles() {
     if (document.getElementById(CSS_ID)) return;
+    var totalH = NAV_H_TOP + NAV_H_SUB;
     var css = ''
-      + '.bcc-topnav{position:sticky;top:0;left:0;right:0;z-index:100;'
-      +   'height:' + NAV_HEIGHT + 'px;background:#0a0a0a;color:#fff;'
+      // ----- Global top nav (카테고리) -----
+      + '.bcc-topnav{position:sticky;top:0;left:0;right:0;z-index:101;'
+      +   'height:' + NAV_H_TOP + 'px;background:#0a0a0a;color:#fff;'
       +   'border-bottom:1px solid rgba(201,168,76,0.3);'
       +   'display:flex;align-items:center;justify-content:space-between;'
       +   'padding:0 24px;'
@@ -59,7 +76,8 @@
       + '.bcc-topnav-logo .bcc-topnav-logo-icon{font-size:20px;line-height:1;}'
       + '.bcc-topnav-logo:hover{color:#e6c869;}'
       + '.bcc-topnav-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0;}'
-      + '.bcc-topnav-menu a{display:block;padding:8px 14px;'
+      + '.bcc-topnav-menu a,.bcc-topnav-menu span.is-disabled{'
+      +   'display:inline-flex;align-items:center;gap:6px;padding:8px 14px;'
       +   'color:rgba(255,255,255,0.7);text-decoration:none;'
       +   'font-size:13px;font-weight:500;letter-spacing:-0.1px;'
       +   'border-radius:4px;transition:color .15s, background .15s;}'
@@ -67,32 +85,75 @@
       + '.bcc-topnav-menu a.is-current{color:#C9A84C;'
       +   'background:rgba(201,168,76,0.08);'
       +   'border-bottom:2px solid #C9A84C;border-radius:0;}'
+      + '.bcc-topnav-menu span.is-disabled{color:rgba(255,255,255,0.32);'
+      +   'cursor:not-allowed;}'
+      + '.bcc-topnav-menu .bcc-soon-badge{font-family:Georgia,serif;font-size:9px;'
+      +   'letter-spacing:1px;background:rgba(255,255,255,0.08);'
+      +   'color:rgba(255,255,255,0.55);padding:2px 6px;border-radius:3px;'
+      +   'text-transform:uppercase;}'
       + '.bcc-topnav-hamburger{display:none;background:transparent;'
       +   'border:1px solid rgba(255,255,255,0.2);color:#fff;'
       +   'padding:6px 10px;border-radius:4px;cursor:pointer;'
       +   'font-size:16px;line-height:1;}'
       + '.bcc-topnav-hamburger:hover{border-color:#C9A84C;color:#C9A84C;}'
-      // Desktop: sidebar must stick below the nav
+
+      // ----- Category-internal sub nav (도구) -----
+      + '.bcc-subnav{position:sticky;top:' + NAV_H_TOP + 'px;left:0;right:0;z-index:100;'
+      +   'height:' + NAV_H_SUB + 'px;background:#141414;'
+      +   'border-bottom:1px solid rgba(255,255,255,0.06);'
+      +   'display:flex;align-items:center;padding:0 24px;overflow-x:auto;'
+      +   'font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;}'
+      + '.bcc-subnav-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0;'
+      +   'align-items:center;}'
+      + '.bcc-subnav-label{font-family:Georgia,serif;font-size:10px;'
+      +   'letter-spacing:2px;color:rgba(255,255,255,0.4);'
+      +   'text-transform:uppercase;margin-right:14px;white-space:nowrap;}'
+      + '.bcc-subnav-menu a{display:inline-block;padding:6px 12px;'
+      +   'color:rgba(255,255,255,0.65);text-decoration:none;font-size:13px;'
+      +   'font-weight:500;border-radius:4px;white-space:nowrap;'
+      +   'transition:color .15s, background .15s;}'
+      + '.bcc-subnav-menu a:hover{color:#fff;background:rgba(255,255,255,0.05);}'
+      + '.bcc-subnav-menu a.is-current{color:#C9A84C;'
+      +   'background:rgba(201,168,76,0.1);font-weight:600;}'
+
+      // ----- Sidebar offset (도구 페이지) -----
       + '@media (min-width:901px){'
-      +   '.app .sidebar{top:' + NAV_HEIGHT + 'px !important;'
-      +   ' height:calc(100vh - ' + NAV_HEIGHT + 'px) !important;}'
+      +   'body.bcc-has-subnav .app .sidebar{top:' + totalH + 'px !important;'
+      +   ' height:calc(100vh - ' + totalH + 'px) !important;}'
+      +   'body.bcc-no-subnav .app .sidebar{top:' + NAV_H_TOP + 'px !important;'
+      +   ' height:calc(100vh - ' + NAV_H_TOP + 'px) !important;}'
       + '}'
-      // Mobile: collapse menu into dropdown
+
+      // ----- Mobile: collapse into single dropdown -----
       + '@media (max-width:720px){'
-      +   '.bcc-topnav{padding:0 16px;position:relative;}'
-      +   '.bcc-topnav-menu{display:none;position:absolute;'
-      +   ' top:' + NAV_HEIGHT + 'px;right:12px;'
-      +   ' background:#0a0a0a;border:1px solid rgba(201,168,76,0.3);'
-      +   ' border-radius:4px;flex-direction:column;padding:8px;'
-      +   ' min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,0.5);'
-      +   ' gap:2px;z-index:100;}'
-      +   '.bcc-topnav-menu.is-open{display:flex;}'
+      +   '.bcc-topnav{padding:0 16px;position:sticky;}'
+      +   '.bcc-topnav-menu{display:none;}'
+      +   '.bcc-subnav{display:none;}'
       +   '.bcc-topnav-hamburger{display:inline-flex;align-items:center;}'
-      +   '.bcc-topnav-menu a{padding:10px 14px;font-size:14px;}'
-      +   '.bcc-topnav-menu a.is-current{border-bottom:none;border-left:2px solid #C9A84C;}'
-      +   '.bcc-topnav-logo{font-size:16px;letter-spacing:1.5px;}'
+      +   '.bcc-mobile-panel{display:none;position:fixed;top:' + NAV_H_TOP + 'px;'
+      +   ' left:0;right:0;z-index:100;background:#0a0a0a;'
+      +   ' border-bottom:1px solid rgba(201,168,76,0.3);'
+      +   ' max-height:calc(100vh - ' + NAV_H_TOP + 'px);overflow-y:auto;'
+      +   ' transform:translateY(-8px);opacity:0;'
+      +   ' transition:transform .18s ease, opacity .18s ease;}'
+      +   '.bcc-mobile-panel.is-open{display:block;transform:translateY(0);opacity:1;}'
+      +   '.bcc-mobile-section{padding:14px 18px;border-top:1px solid rgba(255,255,255,0.06);}'
+      +   '.bcc-mobile-section:first-child{border-top:none;}'
+      +   '.bcc-mobile-section-label{font-family:Georgia,serif;font-size:10px;'
+      +   ' letter-spacing:2px;color:#C9A84C;text-transform:uppercase;margin-bottom:8px;}'
+      +   '.bcc-mobile-section ul{list-style:none;margin:0;padding:0;'
+      +   ' display:flex;flex-direction:column;gap:2px;}'
+      +   '.bcc-mobile-section a,.bcc-mobile-section span.is-disabled{'
+      +   ' display:flex;align-items:center;justify-content:space-between;'
+      +   ' padding:10px 12px;color:rgba(255,255,255,0.78);text-decoration:none;'
+      +   ' font-size:14px;border-radius:4px;}'
+      +   '.bcc-mobile-section a:hover{background:rgba(255,255,255,0.05);color:#fff;}'
+      +   '.bcc-mobile-section a.is-current{color:#C9A84C;'
+      +   ' background:rgba(201,168,76,0.1);border-left:2px solid #C9A84C;}'
+      +   '.bcc-mobile-section span.is-disabled{color:rgba(255,255,255,0.32);}'
       + '}'
-      // Cross-tools section (bottom of results)
+
+      // ----- Cross-tools section (results 하단) -----
       + '.bcc-cross-tools{margin-top:28px;padding-top:24px;'
       +   'border-top:1px solid #e8e5dd;}'
       + '.bcc-cross-tools-kicker{font-family:Georgia,serif;font-size:11px;'
@@ -129,71 +190,204 @@
     if (old) old.parentNode.removeChild(old);
   }
 
-  function buildTopNav(currentToolId) {
+  function resolveCategory(currentTool, currentCategory) {
+    if (currentCategory) return currentCategory;
     var TOOLS = tools();
-    if (!TOOLS.length) return;
+    for (var i = 0; i < TOOLS.length; i++) {
+      if (TOOLS[i].id === currentTool) return TOOLS[i].category;
+    }
+    return '';
+  }
 
-    var menuItems = TOOLS.map(function (t) {
-      var isCurrent = t.id === currentToolId;
+  function buildTopNav(currentTool, currentCategory) {
+    var CATS = categories();
+    if (!CATS.length) return null;
+
+    var menuItems = CATS.map(function (c) {
+      var isCurrent = c.id === currentCategory;
+      var isSoon = c.status === 'soon' || !c.baseUrl;
+      if (isSoon) {
+        return '<li><span class="is-disabled" aria-disabled="true">'
+          + escapeHtml(c.label)
+          + ' <span class="bcc-soon-badge">soon</span></span></li>';
+      }
       var cls = isCurrent ? ' class="is-current" aria-current="page"' : '';
-      var href = isCurrent ? '#' : '../' + t.path;
-      var label = escapeHtml(t.navTitle || t.title);
-      return '<li><a href="' + href + '" data-bcc-nav="' + escapeHtml(t.id) + '"' + cls + '>' + label + '</a></li>';
+      var href = isCurrent ? '#' : c.baseUrl;
+      return '<li><a href="' + escapeHtml(href) + '"'
+        + ' data-bcc-nav-cat="' + escapeHtml(c.id) + '"' + cls + '>'
+        + escapeHtml(c.label) + '</a></li>';
     }).join('');
 
     var nav = document.createElement('nav');
     nav.className = 'bcc-topnav';
-    nav.setAttribute('aria-label', '잇툴즈 메인 네비게이션');
+    nav.setAttribute('aria-label', '잇툴즈 글로벌 네비게이션');
     nav.innerHTML = ''
-      + '<a class="bcc-topnav-logo" href="../" data-bcc-nav="logo" aria-label="잇툴즈 메인으로">'
+      + '<a class="bcc-topnav-logo" href="' + escapeHtml(hubUrl()) + '"'
+      +   ' data-bcc-nav-cat="hub" aria-label="잇툴즈 메인으로">'
       +   '<span class="bcc-topnav-logo-icon">🏠</span>'
       +   '<span>잇툴즈</span>'
       + '</a>'
-      + '<ul class="bcc-topnav-menu" id="bccTopnavMenu" role="menubar">' + menuItems + '</ul>'
-      + '<button class="bcc-topnav-hamburger" id="bccTopnavToggle" '
-      +   'aria-label="메뉴 열기/닫기" aria-controls="bccTopnavMenu" aria-expanded="false">☰</button>';
+      + '<ul class="bcc-topnav-menu" role="menubar">' + menuItems + '</ul>'
+      + '<button class="bcc-topnav-hamburger" id="bccTopnavToggle"'
+      +   ' aria-label="메뉴 열기/닫기" aria-controls="bccMobilePanel"'
+      +   ' aria-expanded="false">☰</button>';
 
     document.body.insertBefore(nav, document.body.firstChild);
 
-    // Click tracking
-    nav.querySelectorAll('[data-bcc-nav]').forEach(function (el) {
+    nav.querySelectorAll('[data-bcc-nav-cat]').forEach(function (el) {
       el.addEventListener('click', function () {
         track('topnav_clicked', {
-          source_tool: currentToolId,
-          target_tool: el.getAttribute('data-bcc-nav')
+          source_tool: currentTool || '',
+          target_category: el.getAttribute('data-bcc-nav-cat')
         });
       });
     });
 
-    // Mobile hamburger toggle
+    return nav;
+  }
+
+  function buildSubNav(currentTool, currentCategory, topNavEl) {
+    if (!currentCategory) return false;
+    var TOOLS = tools();
+    var sameCat = TOOLS.filter(function (t) { return t.category === currentCategory; });
+    if (!sameCat.length) return false;
+
+    var items = sameCat.map(function (t) {
+      var isCurrent = t.id === currentTool;
+      var cls = isCurrent ? ' class="is-current" aria-current="page"' : '';
+      var href = isCurrent ? '#' : '../' + t.path;
+      var label = escapeHtml(t.navTitle || t.title);
+      return '<li><a href="' + href + '" data-bcc-nav-tool="' + escapeHtml(t.id) + '"'
+        + cls + '>' + label + '</a></li>';
+    }).join('');
+
+    var sub = document.createElement('nav');
+    sub.className = 'bcc-subnav';
+    sub.setAttribute('aria-label', '카테고리 내부 네비게이션');
+    sub.innerHTML = ''
+      + '<span class="bcc-subnav-label">Tools</span>'
+      + '<ul class="bcc-subnav-menu" role="menubar">' + items + '</ul>';
+
+    if (topNavEl && topNavEl.nextSibling) {
+      document.body.insertBefore(sub, topNavEl.nextSibling);
+    } else {
+      document.body.appendChild(sub);
+    }
+
+    sub.querySelectorAll('[data-bcc-nav-tool]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        track('subnav_clicked', {
+          source_tool: currentTool || '',
+          target_tool: el.getAttribute('data-bcc-nav-tool')
+        });
+      });
+    });
+
+    return true;
+  }
+
+  function buildMobilePanel(currentTool, currentCategory, topNavEl) {
+    var CATS = categories();
+    var TOOLS = tools();
+
+    var catItems = CATS.map(function (c) {
+      var isCurrent = c.id === currentCategory;
+      var isSoon = c.status === 'soon' || !c.baseUrl;
+      if (isSoon) {
+        return '<li><span class="is-disabled">'
+          + escapeHtml(c.label)
+          + ' <span class="bcc-soon-badge">soon</span></span></li>';
+      }
+      var cls = isCurrent ? ' class="is-current" aria-current="page"' : '';
+      var href = isCurrent ? '#' : c.baseUrl;
+      return '<li><a href="' + escapeHtml(href) + '"'
+        + ' data-bcc-nav-cat="' + escapeHtml(c.id) + '"' + cls + '>'
+        + escapeHtml(c.label) + '</a></li>';
+    }).join('');
+
+    var sameCat = currentCategory
+      ? TOOLS.filter(function (t) { return t.category === currentCategory; })
+      : [];
+
+    var toolItems = sameCat.map(function (t) {
+      var isCurrent = t.id === currentTool;
+      var cls = isCurrent ? ' class="is-current" aria-current="page"' : '';
+      var href = isCurrent ? '#' : '../' + t.path;
+      var label = escapeHtml(t.navTitle || t.title);
+      return '<li><a href="' + href + '" data-bcc-nav-tool="' + escapeHtml(t.id) + '"'
+        + cls + '>' + label + '</a></li>';
+    }).join('');
+
+    var html = ''
+      + '<div class="bcc-mobile-section">'
+      +   '<div class="bcc-mobile-section-label">카테고리</div>'
+      +   '<ul>' + catItems + '</ul>'
+      + '</div>';
+    if (toolItems) {
+      html += ''
+        + '<div class="bcc-mobile-section">'
+        +   '<div class="bcc-mobile-section-label">현재 카테고리 도구</div>'
+        +   '<ul>' + toolItems + '</ul>'
+        + '</div>';
+    }
+
+    var panel = document.createElement('div');
+    panel.className = 'bcc-mobile-panel';
+    panel.id = 'bccMobilePanel';
+    panel.innerHTML = html;
+
+    if (topNavEl && topNavEl.parentNode) {
+      topNavEl.parentNode.insertBefore(panel, topNavEl.nextSibling);
+    } else {
+      document.body.appendChild(panel);
+    }
+
     var toggle = document.getElementById('bccTopnavToggle');
-    var menu = document.getElementById('bccTopnavMenu');
-    if (toggle && menu) {
+    if (toggle) {
       toggle.addEventListener('click', function (e) {
         e.stopPropagation();
-        var open = menu.classList.toggle('is-open');
+        var open = panel.classList.toggle('is-open');
         toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        if (open) track('mobile_nav_opened', { source_tool: currentToolId });
+        if (open) track('mobile_nav_opened', { source_tool: currentTool || '' });
       });
       document.addEventListener('click', function (e) {
-        if (!menu.contains(e.target) && !toggle.contains(e.target)) {
-          menu.classList.remove('is-open');
+        if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+          panel.classList.remove('is-open');
           toggle.setAttribute('aria-expanded', 'false');
         }
       });
-      // Auto-close on escape
       document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && menu.classList.contains('is-open')) {
-          menu.classList.remove('is-open');
+        if (e.key === 'Escape' && panel.classList.contains('is-open')) {
+          panel.classList.remove('is-open');
           toggle.setAttribute('aria-expanded', 'false');
         }
       });
     }
+
+    panel.querySelectorAll('[data-bcc-nav-cat]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        track('topnav_clicked', {
+          source_tool: currentTool || '',
+          target_category: el.getAttribute('data-bcc-nav-cat')
+        });
+      });
+    });
+    panel.querySelectorAll('[data-bcc-nav-tool]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        track('subnav_clicked', {
+          source_tool: currentTool || '',
+          target_tool: el.getAttribute('data-bcc-nav-tool')
+        });
+      });
+    });
   }
 
-  function buildCrossTools(currentToolId) {
+  function buildCrossTools(currentTool, currentCategory) {
     var TOOLS = tools();
-    var others = TOOLS.filter(function (t) { return t.id !== currentToolId; });
+    var others = TOOLS.filter(function (t) {
+      return t.id !== currentTool
+        && (!currentCategory || t.category === currentCategory);
+    });
     if (!others.length) return;
 
     var section = document.createElement('section');
@@ -205,8 +399,8 @@
       + '<div class="bcc-cross-tools-grid">'
       +   others.map(function (t) {
         return ''
-          + '<a class="bcc-cross-tool-card" href="../' + escapeHtml(t.path) + '" '
-          +    'data-bcc-cross="' + escapeHtml(t.id) + '">'
+          + '<a class="bcc-cross-tool-card" href="../' + escapeHtml(t.path) + '"'
+          +    ' data-bcc-cross="' + escapeHtml(t.id) + '">'
           +   '<span class="bcc-ct-icon" aria-hidden="true">' + escapeHtml(t.icon || '🔧') + '</span>'
           +   '<div class="bcc-ct-title">' + escapeHtml(t.title) + '</div>'
           +   '<div class="bcc-ct-desc">' + escapeHtml(t.desc || '') + '</div>'
@@ -224,31 +418,39 @@
     section.querySelectorAll('[data-bcc-cross]').forEach(function (el) {
       el.addEventListener('click', function () {
         track('cross_tool_clicked', {
-          source_tool: currentToolId,
+          source_tool: currentTool || '',
           target_tool: el.getAttribute('data-bcc-cross')
         });
       });
     });
   }
 
-  function doAttach(currentTool) {
-    if (!tools().length) {
-      console.warn('[BCCNav] BCC_CONFIG.TOOLS is empty. Define it in bcc-config.js.');
+  function doAttach(opts) {
+    var currentTool = opts.currentTool || '';
+    var currentCategory = resolveCategory(currentTool, opts.currentCategory);
+
+    if (!categories().length) {
+      console.warn('[BCCNav] BCC_CONFIG.CATEGORIES is empty. Define it in bcc-config.js.');
       return;
     }
     injectStyles();
     removeOldSidebarNav();
-    buildTopNav(currentTool);
-    buildCrossTools(currentTool);
+    var topEl = buildTopNav(currentTool, currentCategory);
+    var hasSub = buildSubNav(currentTool, currentCategory, topEl);
+    buildMobilePanel(currentTool, currentCategory, topEl);
+    document.body.classList.add(hasSub ? 'bcc-has-subnav' : 'bcc-no-subnav');
+    if (currentTool && opts.skipCrossTools !== true) {
+      buildCrossTools(currentTool, currentCategory);
+    }
   }
 
   window.BCCNav = {
     attach: function (opts) {
-      var currentTool = (opts && opts.currentTool) || '';
+      var o = opts || {};
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { doAttach(currentTool); });
+        document.addEventListener('DOMContentLoaded', function () { doAttach(o); });
       } else {
-        doAttach(currentTool);
+        doAttach(o);
       }
     }
   };
