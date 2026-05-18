@@ -97,6 +97,13 @@
     // 4개 진입점: 도구 페이지 API 입력칸 / 허브 메인 / 글로벌 푸터 / 한도 모달
     KAKAO_OPENCHAT_URL: 'https://open.kakao.com/o/gmPptFti',
 
+    // 어드민 화이트리스트 — 일일 한도 무시, Pro 미결제로도 전 기능 사용,
+    // 향후 admin 페이지 접근 권한. 추가 시 한 줄 더 넣으면 BCCAuth 자동 인식.
+    // 보안: 이 파일은 공개 저장소에 푸시되므로 화이트리스트는 누구나 볼 수 있음.
+    //       "어드민 모드"는 실제 보안이 아닌 사용량 한도 UX 차원의 구분입니다.
+    //       민감한 권한이 필요해지면 백엔드 검증으로 전환해야 함.
+    ADMIN_EMAILS: Object.freeze(['ohdana08@gmail.com']),
+
     // BCC 홈페이지
     BCC_SITE_URL: 'https://ohdana08.github.io/bcc-homepage',
 

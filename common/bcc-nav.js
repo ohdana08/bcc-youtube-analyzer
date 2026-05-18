@@ -37,6 +37,108 @@
   var NAV_H_SUB = 44;
   var CSS_ID = 'bcc-nav-styles';
 
+  // ============================================================
+  // BCCAuth (inline) — 어드민/사용자 인증 + 한도 체크 placeholder
+  // ------------------------------------------------------------
+  // 사용자가 admin 으로 로그인하는 방법:
+  //   ① URL 한 번 방문:
+  //      ?admin_login=ohdana08@gmail.com 을 어느 잇툴즈 페이지 끝에
+  //      붙여 한 번 접속하면 localStorage 에 저장되고 URL 자동 정리.
+  //   ② 콘솔에서:
+  //      BCCAuth.loginAs('ohdana08@gmail.com')   → 자동 reload
+  //   로그아웃:
+  //      BCCAuth.logout() 또는 상단 nav 의 ADMIN 배지 클릭
+  //
+  // 보안 주의: 클라이언트 사이드 화이트리스트라 진짜 보안이 아닙니다.
+  //   "Admin 모드"는 사용량 한도 우회·관리 UI 노출을 위한 UX 식별자.
+  //   민감 권한이 생기면 백엔드 토큰 검증으로 교체 필요.
+  // ============================================================
+  var AUTH_KEY = 'bcc_user_email';
+
+  function _safeStorage(action) {
+    try { return action(); } catch (e) { return null; }
+  }
+  function _getEmail() {
+    var v = _safeStorage(function () { return localStorage.getItem(AUTH_KEY); });
+    return (v || '').toLowerCase().trim();
+  }
+  function _setEmail(email) {
+    _safeStorage(function () {
+      localStorage.setItem(AUTH_KEY, String(email).toLowerCase().trim());
+    });
+  }
+  function _clearEmail() {
+    _safeStorage(function () { localStorage.removeItem(AUTH_KEY); });
+  }
+  function _adminEmails() {
+    return (window.BCC_CONFIG && window.BCC_CONFIG.ADMIN_EMAILS) || [];
+  }
+  function _isAdmin() {
+    var em = _getEmail();
+    if (!em) return false;
+    var list = _adminEmails();
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i]).toLowerCase() === em) return true;
+    }
+    return false;
+  }
+
+  // URL ?admin_login=email 처리 (페이지 로드 즉시)
+  try {
+    if (window.location && window.history && window.history.replaceState) {
+      var url = new URL(window.location.href);
+      var p = url.searchParams.get('admin_login');
+      if (p) {
+        _setEmail(p);
+        url.searchParams.delete('admin_login');
+        var clean = url.pathname + (url.search || '') + (url.hash || '');
+        window.history.replaceState(null, '', clean);
+      }
+    }
+  } catch (e) { /* no-op */ }
+
+  // 어드민이면 콘솔에 표시 (UX 보조 — 본인이 admin 상태인지 확인용)
+  if (_isAdmin()) {
+    try {
+      console.info(
+        '%c🔧 BCC ADMIN  %c ' + _getEmail() + ' · 한도 무시 / 전 기능 접근',
+        'background:#C9A84C;color:#0a0a0a;padding:3px 8px;border-radius:3px 0 0 3px;font-weight:700;letter-spacing:0.5px;',
+        'background:#1d1d22;color:#e6c869;padding:3px 10px;border-radius:0 3px 3px 0;'
+      );
+    } catch (e) {}
+  }
+
+  window.BCCAuth = {
+    getEmail: _getEmail,
+    setEmail: _setEmail,
+    logout: function () {
+      _clearEmail();
+      try { console.info('[BCCAuth] Logged out.'); } catch (e) {}
+    },
+    isAdmin: _isAdmin,
+    // 향후 결제 연동 시 BCC_CONFIG.PRO_EMAILS 같은 화이트리스트로 분기.
+    isPro: function () { return _isAdmin(); },
+    loginAs: function (email) {
+      if (!email) { console.warn('[BCCAuth] email 인자가 필요합니다.'); return false; }
+      _setEmail(email);
+      var ok = _isAdmin();
+      try {
+        console.info('[BCCAuth] ' + (ok ? 'ADMIN' : 'user') + ' 로그인: ' + email + ' — reload 합니다.');
+      } catch (e) {}
+      setTimeout(function () { location.reload(); }, 250);
+      return ok;
+    },
+    // 한도 시스템 추후 구현 시 도구 코드에서 호출.
+    // 예: var r = BCCAuth.checkLimit(); if (r.blocked) BCCNav.openLimitModal();
+    // 현재: 어드민 = 무제한 / 그 외 = 한도 미구현(통과).
+    checkLimit: function () {
+      return {
+        blocked: false,
+        reason: _isAdmin() ? 'admin' : 'no_limit_yet'
+      };
+    }
+  };
+
   function tools() {
     return (window.BCC_CONFIG && window.BCC_CONFIG.TOOLS) || [];
   }
@@ -81,6 +183,15 @@
       +   'letter-spacing:2px;font-weight:400;}'
       + '.bcc-topnav-logo .bcc-topnav-logo-icon{font-size:20px;line-height:1;}'
       + '.bcc-topnav-logo:hover{color:#e6c869;}'
+      // Brand group (logo + optional admin badge)
+      + '.bcc-topnav-brand{display:inline-flex;align-items:center;gap:10px;}'
+      + '.bcc-admin-badge{font-family:Georgia,"Times New Roman",serif;'
+      +   'font-size:10px;letter-spacing:1.4px;background:#C9A84C;color:#0a0a0a;'
+      +   'padding:3px 8px;border-radius:3px;border:none;cursor:pointer;'
+      +   'font-weight:700;text-transform:uppercase;line-height:1.2;'
+      +   'transition:background .15s, transform .1s;}'
+      + '.bcc-admin-badge:hover{background:#e6c869;}'
+      + '.bcc-admin-badge:active{transform:scale(0.96);}'
       + '.bcc-topnav-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0;}'
       + '.bcc-topnav-menu a,.bcc-topnav-menu span.is-disabled{'
       +   'display:inline-flex;align-items:center;gap:6px;padding:8px 14px;'
@@ -285,15 +396,24 @@
         + escapeHtml(c.label) + '</a></li>';
     }).join('');
 
+    var adminBadge = _isAdmin()
+      ? '<button class="bcc-admin-badge" id="bccAdminBadge" type="button"'
+        + ' aria-label="Admin 모드 — 클릭하여 로그아웃"'
+        + ' title="Admin: ' + escapeHtml(_getEmail()) + ' — 클릭하여 로그아웃">ADMIN</button>'
+      : '';
+
     var nav = document.createElement('nav');
     nav.className = 'bcc-topnav';
     nav.setAttribute('aria-label', '잇툴즈 글로벌 네비게이션');
     nav.innerHTML = ''
-      + '<a class="bcc-topnav-logo" href="' + escapeHtml(hubUrl()) + '"'
-      +   ' data-bcc-nav-cat="hub" aria-label="잇툴즈 메인으로">'
-      +   '<span class="bcc-topnav-logo-icon">🏠</span>'
-      +   '<span>잇툴즈</span>'
-      + '</a>'
+      + '<div class="bcc-topnav-brand">'
+      +   '<a class="bcc-topnav-logo" href="' + escapeHtml(hubUrl()) + '"'
+      +     ' data-bcc-nav-cat="hub" aria-label="잇툴즈 메인으로">'
+      +     '<span class="bcc-topnav-logo-icon">🏠</span>'
+      +     '<span>잇툴즈</span>'
+      +   '</a>'
+      +   adminBadge
+      + '</div>'
       + '<ul class="bcc-topnav-menu" role="menubar">' + menuItems + '</ul>'
       + '<button class="bcc-topnav-hamburger" id="bccTopnavToggle"'
       +   ' aria-label="메뉴 열기/닫기" aria-controls="bccMobilePanel"'
@@ -309,6 +429,16 @@
         });
       });
     });
+
+    var badgeEl = document.getElementById('bccAdminBadge');
+    if (badgeEl) {
+      badgeEl.addEventListener('click', function () {
+        if (window.confirm('Admin 모드를 로그아웃하시겠습니까?')) {
+          _clearEmail();
+          location.reload();
+        }
+      });
+    }
 
     return nav;
   }
