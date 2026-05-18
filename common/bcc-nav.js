@@ -97,6 +97,11 @@
       +   'font-size:16px;line-height:1;}'
       + '.bcc-topnav-hamburger:hover{border-color:#C9A84C;color:#C9A84C;}'
 
+      // 모바일 햄버거 패널 — 데스크톱 포함 모든 폭에서 기본 숨김.
+      // (모바일 미디어 쿼리가 fixed 포지셔닝/배경/트랜지션을 덮어쓰고,
+      //  .is-open 토글로 display:block 노출.)
+      + '.bcc-mobile-panel{display:none;}'
+
       // ----- Category-internal sub nav (도구) -----
       + '.bcc-subnav{position:sticky;top:' + NAV_H_TOP + 'px;left:0;right:0;z-index:100;'
       +   'height:' + NAV_H_SUB + 'px;background:#141414;'
