@@ -46,6 +46,12 @@
   function hubUrl() {
     return (window.BCC_CONFIG && window.BCC_CONFIG.ITTOOLZ_HUB_URL) || '/';
   }
+  function openchatUrl() {
+    return (window.BCC_CONFIG && window.BCC_CONFIG.KAKAO_OPENCHAT_URL) || '#';
+  }
+  function kakaoUrl() {
+    return (window.BCC_CONFIG && window.BCC_CONFIG.KAKAO_URL) || '#';
+  }
   function escapeHtml(s) {
     return (s == null ? '' : String(s))
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -183,6 +189,62 @@
       +   'font-weight:700;letter-spacing:0.3px;}'
       + '@media (max-width:900px){'
       +   '.bcc-cross-tools-grid{grid-template-columns:1fr;}'
+      + '}'
+
+      // ----- Footer contact strip (도구 페이지 main 하단) -----
+      + '.bcc-footer-contact{margin-top:32px;padding:18px 22px;'
+      +   'background:#fdfaf2;border:1px solid #ebe3cb;border-radius:6px;'
+      +   'display:flex;flex-wrap:wrap;align-items:center;justify-content:center;'
+      +   'gap:10px 18px;font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;}'
+      + '.bcc-footer-contact-label{font-family:Georgia,serif;font-size:11px;'
+      +   'letter-spacing:1.5px;color:#9a7f30;text-transform:uppercase;'
+      +   'margin-right:6px;}'
+      + '.bcc-footer-contact a{display:inline-flex;align-items:center;gap:6px;'
+      +   'padding:8px 14px;background:#fff;border:1px solid #e3dcc7;border-radius:999px;'
+      +   'color:#5a4a1f;font-size:13px;font-weight:600;text-decoration:none;'
+      +   'transition:border-color .15s, color .15s, background .15s;}'
+      + '.bcc-footer-contact a:hover{border-color:#C9A84C;color:#9a7f30;'
+      +   'background:#fbf7e8;}'
+      + '.bcc-footer-contact .bcc-fc-icon{font-size:15px;line-height:1;}'
+
+      // ----- Limit modal placeholder (도구 페이지 전용, 기본 hidden) -----
+      + '.bcc-limit-modal{display:none;}'
+      + '.bcc-limit-modal.is-open{display:flex;position:fixed;inset:0;z-index:200;'
+      +   'background:rgba(10,10,10,0.72);align-items:center;justify-content:center;'
+      +   'padding:24px;animation:bccLimitFadeIn .18s ease;}'
+      + '@keyframes bccLimitFadeIn{from{opacity:0}to{opacity:1}}'
+      + '.bcc-limit-dialog{background:#fff;border-radius:10px;max-width:520px;width:100%;'
+      +   'padding:28px 28px 24px;box-shadow:0 24px 60px rgba(0,0,0,0.4);'
+      +   'font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;'
+      +   'position:relative;}'
+      + '.bcc-limit-close{position:absolute;top:12px;right:14px;background:transparent;'
+      +   'border:none;font-size:22px;color:#888;cursor:pointer;line-height:1;}'
+      + '.bcc-limit-close:hover{color:#0a0a0a;}'
+      + '.bcc-limit-kicker{font-family:Georgia,serif;font-size:11px;letter-spacing:2px;'
+      +   'color:#C9A84C;text-transform:uppercase;font-weight:700;margin-bottom:6px;}'
+      + '.bcc-limit-title{font-size:20px;font-weight:800;color:#0a0a0a;'
+      +   'letter-spacing:-0.3px;margin-bottom:6px;}'
+      + '.bcc-limit-desc{font-size:13px;color:#555;line-height:1.6;margin-bottom:18px;}'
+      + '.bcc-limit-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'
+      + '.bcc-limit-option{display:flex;flex-direction:column;border:1px solid #e8e5dd;'
+      +   'border-radius:8px;padding:16px 14px;text-decoration:none;color:inherit;'
+      +   'transition:border-color .15s, transform .15s, box-shadow .15s;}'
+      + '.bcc-limit-option:hover{border-color:#C9A84C;transform:translateY(-2px);'
+      +   'box-shadow:0 6px 16px rgba(0,0,0,0.08);}'
+      + '.bcc-limit-option.is-soon{opacity:0.7;cursor:not-allowed;}'
+      + '.bcc-limit-option.is-soon:hover{transform:none;border-color:#e8e5dd;'
+      +   'box-shadow:none;}'
+      + '.bcc-limit-opt-icon{font-size:24px;margin-bottom:8px;line-height:1;}'
+      + '.bcc-limit-opt-title{font-size:14px;font-weight:700;color:#0a0a0a;'
+      +   'margin-bottom:4px;}'
+      + '.bcc-limit-opt-sub{font-size:12px;color:#666;line-height:1.55;flex:1;'
+      +   'margin-bottom:10px;}'
+      + '.bcc-limit-opt-cta{font-size:12px;font-weight:700;color:#9a7f30;'
+      +   'letter-spacing:0.3px;}'
+      + '.bcc-limit-option.is-soon .bcc-limit-opt-cta{color:#999;}'
+      + '@media (max-width:560px){'
+      +   '.bcc-limit-options{grid-template-columns:1fr;}'
+      +   '.bcc-limit-dialog{padding:22px 20px 20px;}'
       + '}';
     var style = document.createElement('style');
     style.id = CSS_ID;
@@ -430,6 +492,106 @@
     });
   }
 
+  function buildFooterContact(currentTool) {
+    // 도구 페이지(main.main 가진 페이지)에만 작은 contact strip 삽입.
+    // 허브(bcc-homepage/tools/)는 자체 contact-band + footer 보유하므로 스킵.
+    var main = document.querySelector('main.main');
+    if (!main) return;
+    if (document.getElementById('bccFooterContact')) return;
+
+    var oUrl = openchatUrl();
+    var kUrl = kakaoUrl();
+
+    var section = document.createElement('div');
+    section.className = 'bcc-footer-contact';
+    section.id = 'bccFooterContact';
+    section.innerHTML = ''
+      + '<span class="bcc-footer-contact-label">Need help?</span>'
+      + '<a href="' + escapeHtml(kUrl) + '" target="_blank" rel="noopener noreferrer"'
+      +   ' data-kakao="footer">'
+      +   '<span class="bcc-fc-icon" aria-hidden="true">💛</span>'
+      +   '<span>카톡 상담</span>'
+      + '</a>'
+      + '<a href="' + escapeHtml(oUrl) + '" target="_blank" rel="noopener noreferrer"'
+      +   ' data-openchat="footer">'
+      +   '<span class="bcc-fc-icon" aria-hidden="true">💬</span>'
+      +   '<span>오픈채팅방</span>'
+      + '</a>';
+
+    var legal = main.querySelector('.legal-footer');
+    if (legal && legal.nextSibling) {
+      main.insertBefore(section, legal.nextSibling);
+    } else {
+      main.appendChild(section);
+    }
+  }
+
+  function buildLimitModal(currentTool) {
+    // 도구 페이지 전용 placeholder. 한도 시스템 추후 구현 시
+    // BCCNav.openLimitModal() 호출로 노출.
+    if (!currentTool) return;
+    if (document.getElementById('bccLimitModal')) return;
+
+    var oUrl = openchatUrl();
+    var modal = document.createElement('div');
+    modal.className = 'bcc-limit-modal';
+    modal.id = 'bccLimitModal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'bccLimitTitle');
+    modal.innerHTML = ''
+      + '<div class="bcc-limit-dialog">'
+      +   '<button class="bcc-limit-close" id="bccLimitClose" aria-label="닫기">×</button>'
+      +   '<div class="bcc-limit-kicker">DAILY LIMIT</div>'
+      +   '<h3 class="bcc-limit-title" id="bccLimitTitle">오늘 무료 사용량을 모두 쓰셨습니다</h3>'
+      +   '<p class="bcc-limit-desc">두 가지 방법으로 계속 사용할 수 있어요.</p>'
+      +   '<div class="bcc-limit-options">'
+      +     '<a class="bcc-limit-option" href="' + escapeHtml(oUrl) + '"'
+      +        ' target="_blank" rel="noopener noreferrer" data-openchat="limit_modal">'
+      +       '<span class="bcc-limit-opt-icon" aria-hidden="true">💬</span>'
+      +       '<div class="bcc-limit-opt-title">오픈채팅방에서 API 발급</div>'
+      +       '<div class="bcc-limit-opt-sub">본인 키 발급법을 안내받고 무제한으로 사용하세요. (무료)</div>'
+      +       '<div class="bcc-limit-opt-cta">참여하기 →</div>'
+      +     '</a>'
+      +     '<a class="bcc-limit-option is-soon" href="#" aria-disabled="true"'
+      +        ' onclick="return false;">'
+      +       '<span class="bcc-limit-opt-icon" aria-hidden="true">💎</span>'
+      +       '<div class="bcc-limit-opt-title">Pro 구독 (월 9,900원)</div>'
+      +       '<div class="bcc-limit-opt-sub">키 발급 없이 바로 무제한. 가격/일정 추후 확정.</div>'
+      +       '<div class="bcc-limit-opt-cta">준비 중</div>'
+      +     '</a>'
+      +   '</div>'
+      + '</div>';
+
+    document.body.appendChild(modal);
+
+    function close() {
+      modal.classList.remove('is-open');
+    }
+    document.getElementById('bccLimitClose').addEventListener('click', close);
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) close();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+    });
+  }
+
+  function installOpenchatTracking() {
+    // [data-openchat] 가진 모든 요소(JS-injected + 정적 HTML 모두)에서
+    // 클릭 발생 시 openchat_clicked 이벤트 전송. 위임 처리라 늦게 추가된
+    // 요소(예: 모달 옵션)도 자동 커버.
+    if (window.__bccOpenchatTracked) return;
+    window.__bccOpenchatTracked = true;
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest && e.target.closest('[data-openchat]');
+      if (!el) return;
+      track('openchat_clicked', {
+        location: el.getAttribute('data-openchat') || 'unknown'
+      });
+    }, true);
+  }
+
   function doAttach(opts) {
     var currentTool = opts.currentTool || '';
     var currentCategory = resolveCategory(currentTool, opts.currentCategory);
@@ -447,6 +609,11 @@
     if (currentTool && opts.skipCrossTools !== true) {
       buildCrossTools(currentTool, currentCategory);
     }
+    if (currentTool) {
+      buildFooterContact(currentTool);
+      buildLimitModal(currentTool);
+    }
+    installOpenchatTracking();
   }
 
   window.BCCNav = {
@@ -457,6 +624,16 @@
       } else {
         doAttach(o);
       }
+    },
+    // 한도 시스템 추후 구현 시 호출 (예: BCCNav.openLimitModal()).
+    // 현재는 placeholder UI만 노출.
+    openLimitModal: function () {
+      var m = document.getElementById('bccLimitModal');
+      if (m) m.classList.add('is-open');
+    },
+    closeLimitModal: function () {
+      var m = document.getElementById('bccLimitModal');
+      if (m) m.classList.remove('is-open');
     }
   };
 })();

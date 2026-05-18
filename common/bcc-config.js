@@ -93,6 +93,10 @@
     // 카카오톡 BCC 1:1 채널
     KAKAO_URL: 'https://pf.kakao.com/_xbrxjxkxj/chat',
 
+    // BCC 잇툴즈 오픈채팅방 (API 발급 도움 + 무료 챌린지·강의 공지)
+    // 4개 진입점: 도구 페이지 API 입력칸 / 허브 메인 / 글로벌 푸터 / 한도 모달
+    KAKAO_OPENCHAT_URL: 'https://open.kakao.com/o/gmPptFti',
+
     // BCC 홈페이지
     BCC_SITE_URL: 'https://ohdana08.github.io/bcc-homepage',
 
